@@ -21,12 +21,28 @@ public sealed class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasConversion(id => id.Value, v => new UserId(v))
             .IsRequired();
 
+        builder.Property(p => p.ForumId)
+            .HasConversion(id => id.Value, v => new ForumId(v))
+            .IsRequired();
+
         builder.Property(p => p.Body)
             .HasConversion(b => b.Value, v => BodyText.FromPersistence(v))
             .IsRequired();
 
         builder.Property(p => p.DateCreated).IsRequired();
         builder.Property(p => p.DateEdited);
+        builder.Property(p => p.Edited).IsRequired();
+        
+        builder.Ignore(p => p.Invisible);
+
+        builder.Property(p => p.HiddenByUser)
+            .HasColumnName("Hidden")
+            .IsRequired();
+
+        builder.Property(p => p.SuppressedByAdmin)
+            .IsRequired()
+            .HasDefaultValue(false);
+
 
         builder.HasOne<User>()
             .WithMany()

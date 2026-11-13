@@ -17,6 +17,45 @@ namespace Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("MyApp.Domain.Entities.Ban", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AdminId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Bans", (string)null);
+                });
+
             modelBuilder.Entity("MyApp.Domain.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -35,8 +74,9 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("Edited")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("Hidden")
-                        .HasColumnType("INTEGER");
+                    b.Property<bool>("HiddenByUser")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Hidden");
 
                     b.Property<Guid>("ParentPost")
                         .HasColumnType("TEXT");
@@ -47,9 +87,16 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("RepliedComment")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("SuppressedByAdmin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentPost");
+
+                    b.HasIndex("Poster");
 
                     b.HasIndex("RepliedComment");
 
@@ -63,6 +110,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("State")
@@ -70,6 +118,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -98,11 +147,17 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("ForumId")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("Hidden")
-                        .HasColumnType("INTEGER");
+                    b.Property<bool>("HiddenByUser")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Hidden");
 
                     b.Property<Guid>("Poster")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("SuppressedByAdmin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.HasKey("Id");
 
@@ -129,6 +184,11 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(127)
@@ -151,6 +211,21 @@ namespace Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("MyApp.Domain.Entities.Ban", b =>
+                {
+                    b.HasOne("MyApp.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MyApp.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MyApp.Domain.Entities.Comment", b =>
                 {
                     b.HasOne("MyApp.Domain.Entities.Post", null)
@@ -159,10 +234,16 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MyApp.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("Poster")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("MyApp.Domain.Entities.Comment", null)
                         .WithMany()
                         .HasForeignKey("RepliedComment")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("MyApp.Domain.Entities.Post", b =>
@@ -178,6 +259,42 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("Poster")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MyApp.Domain.Entities.User", b =>
+                {
+                    b.OwnsMany("MyApp.Domain.ValueObjects.Reaction", "Reactions", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<Guid?>("Comment")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<Guid?>("Post")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("Type")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<Guid>("User")
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("UserId", "Id");
+
+                            b1.HasIndex("User", "Post", "Comment");
+
+                            b1.ToTable("Reactions", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.Navigation("Reactions");
                 });
 #pragma warning restore 612, 618
         }

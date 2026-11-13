@@ -31,7 +31,7 @@ public sealed class UserServices
     public async Task<UserId> CreateUser(CreateUserDTO userDTO, CancellationToken ct)
     {
         if (await _users.EmailExists(EmailAddress.Create(userDTO.Email)))
-            throw new System.ApplicationException("Email is already registered.");
+            throw new DomainException("Email is already registered.");
 
         var hash = _hasher.Hash(userDTO.PlainPassword);   
 
@@ -55,21 +55,34 @@ public sealed class UserServices
     {
         User? foundUser = await _users.GetById((UserId)id, ct);
         if (foundUser is null)
-            throw new ApplicationServiceException("Requested user not found");
-        return UserDTO.Create(foundUser);
+            throw new NotFoundException("Requested user not found");
+        return UserDTO.Create(foundUser, _clock.UtcNow);
     }
+//=========================================================================
+
+
+
+    public async Task<RestrictedUserDTO> GetRestrictedById(Guid id, CancellationToken ct)
+    {
+        User? foundUser = await _users.GetById((UserId)id, ct);
+        if (foundUser is null)
+            throw new NotFoundException("Requested user not found");
+        return RestrictedUserDTO.Create(foundUser, _clock.UtcNow);
+    }
+
+    
 
     
 //=========================================================================
 
 
 
-    public async Task<List<UserDTO>> Get(CancellationToken ct)
+    public async Task<List<RestrictedUserDTO>> Get(CancellationToken ct)
     {
         List<User>? userList = await _users.Get(ct);
         if (userList.Count < 1)
-            throw new ApplicationServiceException("No users found");
-        return UserDTO.CreateList(userList);
+            throw new NotFoundException("No users found");
+        return RestrictedUserDTO.CreateList(userList, _clock.UtcNow);
     }
 
     
@@ -77,50 +90,30 @@ public sealed class UserServices
 
 
 
-    public async Task UpdateUser(PatchUserDTO user, CancellationToken ct)
+    public async Task UpdateUser(PatchUserDTO user,Guid authenticatedUserId, CancellationToken ct)
     {
+        // se busca al usuario por el ID obtenido del JWT
+        User? changedUser = await _users.GetById(
+            (UserId)authenticatedUserId, ct);
 
-// Verificamos que haya un ID de usuario en el DTO
-        if (user.Id == Guid.Empty)
-            throw new ApplicationServiceException("ID is required to modify a user.");
+        if (changedUser is null)
+            throw new NotFoundException("Requested user not found");
 
-// Verificamos que al menos un campo tenga contenido.
-        if (user.Email is null && user.Name is null && user.DateOfBirth is null && user.PlainPassword is null && user.Role is null)
-            return ;
+        if (user.Email is null &&
+            user.Name is null &&
+            user.PlainPassword is null)
+            return;
 
-// De no ser así, devolvemos un hermoso 204 sin contenido, sin molestar a la base de datos ni gastar tiempo de procesamiento.
-
-// Invocamos al usuario original
-        var userId = (UserId)user.Id;
-        User? changedUser = await _users.GetById(userId, ct);
-
-// Ahora changedUser existe en este namespace y lo podemos modificar para después devolverlo con un único método en el repositorio.
-    if (changedUser is null)
-        throw new ApplicationServiceException("Requested user not found");
-
-// Si el usuario no existe o no tiene datos guardados, hay error.
-
-// Sigue el use case de cambiar el mail
         if (user.Email is string email)
             changedUser = await ChangeEmail(email, changedUser);
 
-// Sigue el use case de cambiar el nombre
         if (user.Name is string name)
             changedUser = await ChangeName(name, changedUser);
 
-// Sigue el use case de cambiar la fecha de nacimiento
-        if (user.DateOfBirth is DateOnly dob)
-            changedUser = await ChangeDoB(dob, changedUser);
-
-// Sigue el use case de cambiar la contraseña
         if (user.PlainPassword is string plainPassword)
             changedUser = await ChangePassword(plainPassword, changedUser);
-// Sigue el use case de cambiar el rol
-        if (user.Role is int role)
-            changedUser = await ChangeRole(role, changedUser);
-// Por último, llamamos al repositorio para que haga el update de changedUser, que ya tiene los cambios aplicados.
+
         await _users.Update(changedUser, ct);
-        return;
     }
 
 
@@ -128,8 +121,10 @@ public sealed class UserServices
 
     private async Task<User> ChangeEmail(string email, User user)
     {
+        if (user.Email.ToString()==email)
+            return user;
         if (await _users.EmailExists(EmailAddress.Create(email)))
-            throw new ApplicationServiceException("An account for this email address already exists.");
+            throw new DomainException("An account for this email address already exists.");
         user.ChangeEmail(email);
         return user;
     }
@@ -140,11 +135,6 @@ public sealed class UserServices
         return user;
     }
 
-    private async Task<User> ChangeDoB(DateOnly dob, User user)
-    {
-        user.ChangeDateOfBirth(dob, _clock.UtcNow);
-        return user;
-    }
 
     private async Task<User> ChangePassword(string plainPassword, User user)
     {
@@ -153,20 +143,55 @@ public sealed class UserServices
         return user;
     }
 
-    private async Task<User> ChangeRole(int role, User user)
-    {
-        //Normalmente validaríamos la autorización del usuario que hace el cambio de rol, pero aún no hemos implementado jwt, así que queda para después.
-        if (!Enum.IsDefined(typeof(UserRole), role))
-            throw new ApplicationServiceException("Invalid role specified.");
-        user.SetRole((UserRole)role);
-        return user;
-    }
+    public async Task ChangeUserRole(Guid targetUserId, int role, Guid authenticatedUserId, CancellationToken ct)
+{
+    // Verifica que quien realiza el cambio sea SysAdmin
+    User? admin = await _users.GetById(
+        (UserId)authenticatedUserId, ct);
+
+    if (admin is null || admin.Role != UserRole.SysAdmin)
+        throw new UnauthorizedAccessException(
+            "Only SysAdmin can change user roles.");
+
+    // Nadie puede modificar su propio rol
+    if (targetUserId == authenticatedUserId)
+        throw new UnauthorizedAccessException(
+            "You cannot change your own role.");
+
+    // Valida que el rol exista
+    if (!Enum.IsDefined(typeof(UserRole), role))
+        throw new DomainException("Invalid role specified.");
+
+    // Busca al usuario que recibirá el nuevo rol
+    User? targetUser = await _users.GetById(
+        (UserId)targetUserId, ct);
+
+    if (targetUser is null)
+        throw new NotFoundException("Requested user not found");
+
+    targetUser.SetRole((UserRole)role);
+
+    await _users.Update(targetUser, ct);
+}
     
-    public async Task DeleteUser(Guid id, CancellationToken ct)
+    public async Task DeleteOwnAccount(
+    Guid authenticatedUserId,
+    CancellationToken ct)
     {
-        User? userToDelete = await _users.GetById((UserId)id, ct);
+        // busca la cuenta del usuario autenticado.
+        User? userToDelete = await _users.GetById(
+            (UserId)authenticatedUserId, ct);
+
         if (userToDelete is null)
-            throw new ApplicationServiceException("Requested user not found");
-        await _users.Delete(userToDelete, ct);
-    }
+            throw new NotFoundException("Requested user not found");
+
+        /// Genera una contraseña aleatoria que no se guardara
+        string disabledHash = _hasher.Hash(
+            Guid.NewGuid().ToString("N"));
+
+        // Desactiva la cuenta sin eliminar sus registros
+        userToDelete.DeactivateAccount(disabledHash);
+
+        await _users.Update(userToDelete, ct);
+        }
 }

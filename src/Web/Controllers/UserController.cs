@@ -3,6 +3,8 @@ using MyApp.Application.Services;
 using MyApp.Application.Models;
 using MyApp.Domain.Entities;
 using MyApp.Domain.ValueObjects;
+using Microsoft.AspNetCore.Authorization;
+using MyApp.Web.Extensions;
 
 namespace MyApp.Web.Controllers;
 
@@ -19,16 +21,33 @@ public class UserController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<User>>> Get(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<RestrictedUserDTO>>> Get(CancellationToken cancellationToken)
     {
         var users = await _services.Get(cancellationToken);
         return Ok(users);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<RestrictedUserDTO>> GetRestrictedById([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var user = await _services.GetRestrictedById(id, cancellationToken);
+        return Ok(user);
+    }
+
+    [Authorize(Roles ="Sysadmin, Admin")]
+    [HttpGet("{id}/full")]
+    public async Task<ActionResult<UserDTO>> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var user = await _services.GetById(id, cancellationToken);
+        return Ok(user);
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<UserDTO>> GetSelf([FromHeader] string token, CancellationToken cancellationToken)
+    {
+        Guid userId = User.GetAuthenticatedUserId();
+        var user = await _services.GetById(userId, cancellationToken);
         return Ok(user);
     }
 
@@ -39,17 +58,40 @@ public class UserController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = registeredUserId },          registeredUserId);
     }
 
+    [Authorize]
     [HttpPatch]
     public async Task<IActionResult> UpdateUser(PatchUserDTO userDTO, CancellationToken ct)
     {
-        await _services.UpdateUser(userDTO, ct);
+        Guid userId = User.GetAuthenticatedUserId();
+        await _services.UpdateUser(userDTO, userId, ct);
         return NoContent();
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteUser([FromRoute] Guid id, CancellationToken cancellationToken)
+    [Authorize(Roles = "SysAdmin")]
+    [HttpPatch("{id:guid}/role")]
+    public async Task<IActionResult> ChangeUserRole(
+        [FromRoute] Guid id,
+        [FromBody] ChangeUserRoleDTO dto,
+        CancellationToken ct)
     {
-        await _services.DeleteUser(id, cancellationToken);
+        // identifica al SysAdmin por el JWT
+        Guid adminId = User.GetAuthenticatedUserId();
+
+        await _services.ChangeUserRole(
+            id, dto.Role, adminId, ct);
+
+        return NoContent();
+
+    }
+    //El usuario no puede seleccionar que user eliminar, el id se obtiene del JWT, solo se puede elimnar a si mismo
+    [Authorize]
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteUser(CancellationToken ct)
+    {
+        // se identifica al usuario que quiere eliminar su cuenta
+        Guid userId = User.GetAuthenticatedUserId();
+        
+        await _services.DeleteOwnAccount(userId, ct);
         return NoContent();
     }
 }

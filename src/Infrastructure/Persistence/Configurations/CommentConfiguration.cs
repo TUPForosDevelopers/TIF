@@ -23,8 +23,8 @@ public sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.Property(c => c.RepliedComment)
             .HasConversion(
-                id => id!.Value.Value,
-                v => new CommentId(v));
+                id => id.HasValue ? id.Value.Value : (Guid?)null,
+                v => v.HasValue ? new CommentId(v.Value) : (CommentId?)null);
 
         builder.Property(c => c.Poster)
             .HasConversion(id => id.Value, v => new UserId(v))
@@ -36,15 +36,32 @@ public sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.Property(c => c.DateCreated).IsRequired();
         builder.Property(c => c.DateEdited);
+        builder.Property(c => c.Edited).IsRequired();
+        
+        builder.Ignore(c => c.Invisible);
+
+        builder.Property(c => c.HiddenByUser)
+            .HasColumnName("Hidden")
+            .IsRequired();
+
+        builder.Property(c => c.SuppressedByAdmin)
+            .IsRequired()
+            .HasDefaultValue(false);
+
 
         builder.HasOne<Post>()
             .WithMany()
             .HasForeignKey(c => c.ParentPost)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(c => c.Poster)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne<Comment>()
             .WithMany()
             .HasForeignKey(c => c.RepliedComment)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
