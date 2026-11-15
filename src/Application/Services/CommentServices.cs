@@ -7,13 +7,15 @@ using MyApp.Domain.Exceptions;
 
 namespace MyApp.Application.Services;
 
-public sealed class CommentServices{
+public sealed class CommentServices
+{
     private readonly ICommentRepository _repository;
     private readonly IClock _clock;
     private readonly ISanitizer _sanitizer;
     private readonly IUserRepository _userRepository;
     private readonly IPostRepository _postRepository;
-    public CommentServices(ICommentRepository commentRepository, IPostRepository postRepository,IUserRepository userRepository, IClock clock, ISanitizer sanitizer){
+    public CommentServices(ICommentRepository commentRepository, IPostRepository postRepository, IUserRepository userRepository, IClock clock, ISanitizer sanitizer)
+    {
         _sanitizer = sanitizer;
         _repository = commentRepository;
         _postRepository = postRepository;
@@ -50,7 +52,7 @@ public sealed class CommentServices{
     public async Task<CommentDTO> Create(CreateCommentDTO dto, Guid userId, CancellationToken ct)
     {
         if (userId == Guid.Empty)
-        throw new DomainException("A comment must have an author.");
+            throw new DomainException("A comment must have an author.");
         // Rescatamos el post padre
         Post? parent = await _postRepository.GetById((PostId)dto.ParentPost, ct);
         if (parent is null)
@@ -67,7 +69,7 @@ public sealed class CommentServices{
             if (repliedComment is null)
                 throw new NotFoundException("Requested comment not found");
         }
-        
+
         var entity = new Comment(
             _sanitizer.Sanitize(dto.Body),
             parent,
