@@ -78,6 +78,11 @@ namespace Infrastructure.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("Hidden");
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<Guid>("ParentPost")
                         .HasColumnType("TEXT");
 
@@ -265,9 +270,6 @@ namespace Infrastructure.Migrations
                 {
                     b.OwnsMany("MyApp.Domain.ValueObjects.Reaction", "Reactions", b1 =>
                         {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("TEXT");
-
                             b1.Property<int>("Id")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("INTEGER");
@@ -284,9 +286,20 @@ namespace Infrastructure.Migrations
                             b1.Property<Guid>("User")
                                 .HasColumnType("TEXT");
 
-                            b1.HasKey("UserId", "Id");
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("TEXT");
 
-                            b1.HasIndex("User", "Post", "Comment");
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("UserId");
+
+                            b1.HasIndex("User", "Comment")
+                                .IsUnique()
+                                .HasFilter("\"Comment\" IS NOT NULL");
+
+                            b1.HasIndex("User", "Post")
+                                .IsUnique()
+                                .HasFilter("\"Post\" IS NOT NULL");
 
                             b1.ToTable("Reactions", (string)null);
 

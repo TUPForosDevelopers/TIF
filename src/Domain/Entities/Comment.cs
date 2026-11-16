@@ -9,6 +9,7 @@ public sealed class Comment : TextEntity
 
     public PostId ParentPost { get; private set; }
     public CommentId? RepliedComment { get; private set; }
+    public bool IsDeleted { get; private set; } = false;
 
     private Comment() { Body = null!; }
     public Comment(
@@ -29,5 +30,13 @@ public sealed class Comment : TextEntity
         DateCreated = dateCreated;
         DateEdited = null;
     }
+    public void MarkAsDeleted()
+    {
+        if (IsDeleted)
+            throw new DomainException(
+                "Comment is already deleted.");
 
+        base.Delete();
+        IsDeleted = true;
+}
 }

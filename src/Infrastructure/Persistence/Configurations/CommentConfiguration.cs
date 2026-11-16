@@ -38,6 +38,10 @@ public sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(c => c.DateEdited);
         builder.Property(c => c.Edited).IsRequired();
 
+        builder.Property(c => c.IsDeleted)
+        .IsRequired()
+        .HasDefaultValue(false);
+        
         builder.Ignore(c => c.Invisible);
 
         builder.Property(c => c.HiddenByUser)

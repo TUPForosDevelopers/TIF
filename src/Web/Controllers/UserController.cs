@@ -44,7 +44,7 @@ public class UserController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<UserDTO>> GetSelf([FromHeader] string token, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDTO>> GetSelf( CancellationToken cancellationToken)
     {
         Guid userId = User.GetAuthenticatedUserId();
         var user = await _services.GetById(userId, cancellationToken);
