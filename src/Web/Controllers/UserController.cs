@@ -34,7 +34,7 @@ public class UserController : ControllerBase
         return Ok(user);
     }
 
-    [Authorize(Roles ="Sysadmin, Admin")]
+    [Authorize(Roles ="SysAdmin, Admin")]
     [HttpGet("{id}/full")]
     public async Task<ActionResult<UserDTO>> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
@@ -44,7 +44,7 @@ public class UserController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<UserDTO>> GetSelf([FromHeader] string token, CancellationToken cancellationToken)
+    public async Task<ActionResult<UserDTO>> GetSelf( CancellationToken cancellationToken)
     {
         Guid userId = User.GetAuthenticatedUserId();
         var user = await _services.GetById(userId, cancellationToken);
