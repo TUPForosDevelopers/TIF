@@ -9,21 +9,23 @@ export const getForums = async () => {
 export const getForum = async (id) =>
   forumFromApi(await httpRequest(`/Forum/${id}`));
 
-export const createForum = async (forum) =>
+export const createForum = async (forum, token) =>
   forumFromApi(
     await httpRequest("/Forum", {
       method: "POST",
       body: forumToApi(forum),
+      token,
     })
   );
 
-export const updateForum = async (id, forum) =>
+export const updateForum = async (id, forum, token) =>
   forumFromApi(
     await httpRequest(`/Forum/${id}`, {
       method: "PUT",
       body: forumToApi(forum),
+      token,
     })
   );
 
-export const deleteForum = (id) =>
-  httpRequest(`/Forum/${id}`, { method: "DELETE" });
+export const deleteForum = (id, token) =>
+  httpRequest(`/Forum/${id}`, { method: "DELETE", token });

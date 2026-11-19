@@ -9,7 +9,7 @@ import { deleteForum } from "../Services/forumService.js";
 const ForumDisplay = ({ forum }) => {
   const navigate = useNavigate();
 
-  const { isSysAdmin, isAuthenticated } = useAuth();
+  const { isSysAdmin, isAuthenticated, token } = useAuth();
 
   const { id, name, desc, status } = forum;
 
@@ -53,7 +53,7 @@ const ForumDisplay = ({ forum }) => {
       setDeleteForumLoading(true);
       setDeleteForumError("");
 
-      await deleteForum(id);
+      await deleteForum(id, token);
 
       setDeletionModal(false);
       setIsForumVisible(false);

@@ -11,14 +11,13 @@ const NewForum = () => {
   const [form, setForm] = useState({
     name: "",
     desc: "",
-    rules: "",
   });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const { isAdmin } = useAuth();
+  const { isAdmin, token } = useAuth();
 
   const handleChange = (event) => {
     setForm({
@@ -46,7 +45,7 @@ const NewForum = () => {
     try {
       setLoading(true);
 
-      await createForum(form);
+      await createForum(form, token);
 
       setSuccess("Foro creado correctamente.");
 
@@ -111,18 +110,6 @@ const NewForum = () => {
                   name="desc"
                   placeholder="Describí brevemente de qué trata este foro..."
                   value={form.desc}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-4">
-                <Form.Label>Reglas del foro</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  name="rules"
-                  placeholder="Ej: Respetar a los demás usuarios. No publicar spam. Usar títulos descriptivos."
-                  value={form.rules}
                   onChange={handleChange}
                 />
               </Form.Group>

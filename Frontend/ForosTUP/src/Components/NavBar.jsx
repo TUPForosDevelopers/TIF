@@ -24,7 +24,7 @@ const NavBar = () => {
   const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState("");
 
-  const { user, isAuthenticated, logout, isAdmin, isSysAdmin } = useAuth();
+  const { user, token, isAuthenticated, logout, isAdmin, isSysAdmin } = useAuth();
 
   const userColor = isSysAdmin ? "warning" : (isAdmin ? "light" : "info");
 
@@ -45,10 +45,9 @@ const NavBar = () => {
     setDeleteAccountLoading(true);
     setDeleteAccountError("");
 
-    const idUserToRemove = user.id;
 
     try {
-      await deleteUser(idUserToRemove);
+      await deleteUser(token);
       closeDeleteModal();
       logout();
       navigate("/register");

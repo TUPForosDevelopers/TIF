@@ -1,11 +1,13 @@
+import { authenticate, getCurrentUser } from "../Services/userService.js";
 import { useAuth } from "../context/AuthContext";
 import "./LogIn.css";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
 
 const LogIn = () => {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const { login } = useAuth();
 
   const [form, setForm] = useState({
@@ -29,24 +31,10 @@ const LogIn = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      const data = await response.json();
-
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al iniciar sesión");
-      }
-
-      login(data.user, data.token);
-
-      navigate("/main");
+      const token = await authenticate(form.correo, form.password);
+      const user = await getCurrentUser(token);
+      login(user, token);
+      navigate(state?.from || "/main", { replace: true });
 
     } catch (error) {
       setError(error.message);

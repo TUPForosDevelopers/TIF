@@ -1,3 +1,4 @@
+import ReactionActions from "./ReactionActions.jsx";
 import { Alert, Button, Form, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { formatBodyText } from "../Services/imgUtils/imgUtils.js";
@@ -10,6 +11,7 @@ import {
 
 const PostBody = ({
   postState,
+  token,
   permissions,
   requireAuth,
   navigate,
@@ -53,8 +55,10 @@ const PostBody = ({
       `/newban?userId=${target.id}&userName=${encodeURIComponent(target.name || "Usuario")}`
     );
 
-  const handleSaveEdit = (event) =>
+  const handleSaveEdit = (event) => {
+    event.preventDefault();
     requireAuth(() => saveEdit(event));
+  };
 
   const handleOpenDeleteModal = () =>
     requireAuth(() => {
@@ -154,11 +158,10 @@ const PostBody = ({
         )}
 
         <div className="post-main-actions">
-          <span className="post-comments-count">
-            Comentarios pendientes de integración
-          </span>
-
-          {canEditPost(post) && !editing && (
+          {!post.hidden && post.Forum?.status !== false && (
+            <ReactionActions resource="Post" id={post.id} token={token} requireAuth={requireAuth} />
+          )}
+          {canEditPost(post) && post.Forum?.status !== false && !post.hidden && !editing && (
             <Button
               type="button"
               variant="outline-secondary"

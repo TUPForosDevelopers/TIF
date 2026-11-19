@@ -12,15 +12,14 @@ import {
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { getUser, updateUser } from "../Services/userService.js";
+import { getCurrentUser, updateUser } from "../Services/userService.js";
 import "./UserEdit.css";
 
 const UserEdit = () => {
-  const { user } = useAuth();
+  const { token, login } = useAuth();
   const navigate = useNavigate();
 
   const nameRef = useRef(null);
-  const dateOfBirthRef = useRef(null);
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const originalProfile = useRef(null);
@@ -29,28 +28,25 @@ const UserEdit = () => {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
-    dateOfBirth: "",
     email: "",
     password: "",
   });
   const [formData, setFormData] = useState({
     name: "",
-    dateOfBirth: "",
     email: "",
     password: "",
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!token) return;
 
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const profile = await getUser(user.id);
+        const profile = await getCurrentUser(token);
         originalProfile.current = profile;
         setFormData({
           name: profile.name,
-          dateOfBirth: profile.dateOfBirth,
           email: profile.email,
           password: "",
         });
@@ -62,21 +58,17 @@ const UserEdit = () => {
     };
 
     loadProfile();
-  }, [user?.id]);
+  }, [token]);
 
   const validateForm = () => {
     const errors = {
       name: "",
-      dateOfBirth: "",
       email: "",
       password: "",
     };
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.name.trim()) errors.name = "El nombre es obligatorio.";
-    if (!formData.dateOfBirth) {
-      errors.dateOfBirth = "La fecha de nacimiento es obligatoria.";
-    }
     if (!formData.email.trim()) {
       errors.email = "El correo electrónico es obligatorio.";
     } else if (!emailRegex.test(formData.email)) {
@@ -89,7 +81,6 @@ const UserEdit = () => {
     setFieldErrors(errors);
 
     if (errors.name) nameRef.current?.focus();
-    else if (errors.dateOfBirth) dateOfBirthRef.current?.focus();
     else if (errors.email) emailRef.current?.focus();
     else if (errors.password) passwordRef.current?.focus();
 
@@ -106,7 +97,7 @@ const UserEdit = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validateForm()) return;
-    if (!user?.id) {
+    if (!originalProfile.current) {
       setError("No se pudo identificar el usuario que se desea editar.");
       return;
     }
@@ -117,14 +108,11 @@ const UserEdit = () => {
       const original = originalProfile.current;
       const changes = {
         name: formData.name !== original?.name ? formData.name : undefined,
-        dateOfBirth:
-          formData.dateOfBirth !== original?.dateOfBirth
-            ? formData.dateOfBirth
-            : undefined,
         email: formData.email !== original?.email ? formData.email : undefined,
         password: formData.password || undefined,
       };
-      await updateUser(user.id, changes);
+      await updateUser(changes, token);
+      login(await getCurrentUser(token), token);
       toast.success("Perfil actualizado correctamente.", {
         className: "toast-success-custom",
         progressClassName: "toast-progress-custom",
@@ -160,22 +148,6 @@ const UserEdit = () => {
                   />
                   <Form.Control.Feedback type="invalid" className="user-edit-error">
                     {fieldErrors.name}
-                  </Form.Control.Feedback>
-                </FormGroup>
-
-                <FormGroup className="mb-3">
-                  <Form.Label>Fecha de nacimiento</Form.Label>
-                  <Form.Control
-                    ref={dateOfBirthRef}
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    isInvalid={!!fieldErrors.dateOfBirth}
-                    required
-                  />
-                  <Form.Control.Feedback type="invalid" className="user-edit-error">
-                    {fieldErrors.dateOfBirth}
                   </Form.Control.Feedback>
                 </FormGroup>
 

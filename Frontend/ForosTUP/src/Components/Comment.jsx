@@ -1,4 +1,5 @@
-import { Alert, Button, Form } from "react-bootstrap";
+import ReactionActions from "./ReactionActions.jsx";
+import { Button, Form } from "react-bootstrap";
 import { formatBodyText } from "../Services/imgUtils/imgUtils.js";
 import {
   formatDate,
@@ -13,7 +14,7 @@ const Comment = ({
   commentsState,
   permissions,
   token,
-  user,
+  readOnly,
   requireAuth,
   navigate,
   onMakeAdminClick,
@@ -55,9 +56,7 @@ const Comment = ({
   const childProps = {
     commentsState,
     permissions,
-    token,
-    user,
-    requireAuth,
+        requireAuth,
     navigate,
     onMakeAdminClick,
     onDeleteClick,
@@ -142,16 +141,20 @@ const Comment = ({
           )}
 
           <div className="thread-comment-actions">
-            <button type="button" hidden>↑ {comment.likeCount || 0}</button>
-            <button type="button" onClick={() => requireAuth(() => startReply(comment))}>
-              Responder
-            </button>
-            {canEditComment(comment) && !isEditing && (
+            {!readOnly && !comment.isDeleted && !comment.hidden && (
+              <ReactionActions resource="Comment" id={comment.id} token={token} requireAuth={requireAuth} />
+            )}
+            {!readOnly && !comment.isDeleted && !comment.hidden && (
+              <button type="button" onClick={() => requireAuth(() => startReply(comment))}>
+                Responder
+              </button>
+            )}
+            {!readOnly && canEditComment(comment) && !isEditing && (
               <button type="button" onClick={() => requireAuth(() => startEdit(comment))}>
                 Editar
               </button>
             )}
-            {canDeleteComments() && (
+            {canDeleteComments(comment) && (
               <button
                 type="button"
                 className="delete-comment-text-button"

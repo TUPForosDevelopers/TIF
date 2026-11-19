@@ -1,3 +1,4 @@
+import { createBan } from "../Services/banService.js";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Card, Col, Form, FormGroup, Row } from "react-bootstrap";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -76,7 +77,7 @@ const NewBan = () => {
 
     if (!formData.duration) {
       newErrors.duration = "La duración es obligatoria.";
-    } else if (Number(formData.duration) <= 0) {
+    } else if (!Number.isInteger(Number(formData.duration)) || Number(formData.duration) <= 0) {
       newErrors.duration = "La duración debe ser mayor a 0 días.";
     }
 
@@ -111,25 +112,7 @@ const NewBan = () => {
       setLoading(true);
       setError("");
 
-      const response = await fetch("http://localhost:3000/bans", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-        userId: Number(formData.userId),
-        reason: formData.reason.trim(),
-        duration: Number(formData.duration),
-      }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al crear el ban");
-      }
-
+      await createBan(formData, token);
       toast.success("Usuario baneado correctamente", {
       className: "toast-success-custom",
       progressClassName: "toast-progress-custom",

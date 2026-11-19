@@ -9,7 +9,7 @@ import "./NewPost.css";
 const NewPost = () => {
   const { forumId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { token } = useAuth();
 
   const [form, setForm] = useState({
     body: "",
@@ -65,8 +65,8 @@ const NewPost = () => {
       return;
     }
 
-    if (!user?.id) {
-      setErrorGeneral("No se pudo identificar al autor de la publicación.");
+    if (!token) {
+      setErrorGeneral("Iniciá sesión para publicar.");
       return;
     }
 
@@ -76,8 +76,7 @@ const NewPost = () => {
       const data = await createPost({
         body: form.body,
         forumId,
-        userId: user.id,
-      });
+      }, token);
       toast.success("Publicación creada correctamente.", {
         className: "toast-success-custom",
         progressClassName: "toast-progress-custom",

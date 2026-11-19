@@ -1,3 +1,4 @@
+import { formatDate } from "../Services/UtilityServices/postUtils.js";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Form, Row, Col, Card, Spinner, Alert, Button } from "react-bootstrap";
 import { useApiResource } from "../hooks/useApiResource.js";
@@ -18,7 +19,7 @@ const ForumPage = () => {
   const navigate = useNavigate();
 
   // activación de los campos de edición
-  const {isAdmin, isSysAdmin} = useAuth()
+  const { isAdmin, isSysAdmin, token } = useAuth()
   const [editForumName, setEditForumName] = useState(false);
   const [editForumDesc, setEditForumDesc] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -95,9 +96,9 @@ const ForumPage = () => {
       desc: forum?.desc
     }
 
-    if (editedName !== "") newForum.name = editedName || "";
-    if (editedDesc !== "") newForum.desc = editedDesc || ""
-    await updateForum(forumId, newForum);
+    if (editForumName) newForum.name = editedName;
+    if (editForumDesc) newForum.desc = editedDesc;
+    await updateForum(forumId, newForum, token);
     setEditForumName(false)
     setEditForumDesc(false)
     setEditedName("");
@@ -197,7 +198,7 @@ const ForumPage = () => {
 
 
             <div className="forum-detail-meta">
-              <span>Fundador: {forum?.Person?.name || "Admin"}</span>
+              <span>{forum?.status ? "Activo" : "Inactivo"}</span>
               <span>{forumPosts.length} Publicaciones</span>
             </div>
           </div>
@@ -206,6 +207,7 @@ const ForumPage = () => {
             variant="success"
             className="forum-detail-new-post"
             onClick={handleNewPost}
+            disabled={!forum?.status}
           >
             + Nueva publicación
           </Button>
@@ -244,12 +246,9 @@ const ForumPage = () => {
 
                         <div className="forum-detail-post-footer">
                           <span>
-                            {post.Person?.name || "Usuario"} · Hace unas horas
+                            {post.Person?.name || "Usuario"} · {formatDate(post.postDate)}
                           </span>
 
-                          <div className="forum-detail-post-stats">
-                            <span>Sin estadísticas disponibles</span>
-                          </div>
                         </div>
                       </div>
                     </article>
@@ -283,10 +282,6 @@ const ForumPage = () => {
                     <strong>{forumPosts.length}</strong>
                   </div>
 
-                  <div className="forum-detail-stat">
-                    <span>Comentarios:</span>
-                    <strong>Pendiente</strong>
-                  </div>
 
                   <div className="forum-detail-stat">
                     <span>Estado:</span>

@@ -1,7 +1,7 @@
 export const userFromApi = (user) => ({
   id: user.userId,
   name: user.name,
-  dateOfBirth: user.dateOfBirth,
+  age: user.age,
   email: user.email,
   role: user.userRole?.toUpperCase(),
   createdAt: user.dateCreated,
@@ -14,11 +14,8 @@ export const newUserToApi = (user) => ({
   plainPassword: user.password,
 });
 
-export const userChangesToApi = (id, changes) => ({
-  id,
+export const userChangesToApi = (changes) => ({
   name: changes.name?.trim() || null,
-  dateOfBirth: changes.dateOfBirth || null,
   email: changes.email?.trim() || null,
   plainPassword: changes.password || null,
-  role: changes.role ?? null,
 });

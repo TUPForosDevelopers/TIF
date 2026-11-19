@@ -4,16 +4,11 @@ export const postFromApi = (post) => ({
   forumId: post.forum,
   postDate: post.date,
   edited: post.edited,
-  hidden: post.hidden,
+  hidden: post.invisible,
   body: post.body,
 });
 
-export const newPostToApi = ({ body, forumId, userId }) => ({
-  id: "00000000-0000-0000-0000-000000000000",
-  poster: userId,
+export const newPostToApi = ({ body, forumId }) => ({
   forum: forumId,
-  date: new Date().toISOString(),
-  edited: false,
-  hidden: false,
   body: body.trim(),
 });

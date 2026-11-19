@@ -1,3 +1,4 @@
+import { updateBan } from "../Services/banService.js";
 import { useState } from "react";
 import "./Bans.css";
 import { Alert, Button, Card, Col, Form, FormGroup, Row } from "react-bootstrap";
@@ -31,7 +32,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
             return;
         }
 
-        if (!formData.duration || Number(formData.duration) <= 0) {
+        if (!Number.isInteger(Number(formData.duration)) || Number(formData.duration) <= 0) {
             setError("La duración debe ser mayor a 0 días.");
             return;
         }
@@ -40,22 +41,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
             setError("");
             setSuccess("");
 
-            const response = await fetch(`http://localhost:3000/bans/${ban.id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    duration: Number(formData.duration),
-                    reason: formData.reason.trim(),
-                }),
-            })
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Error al modificar el ban");
-            }
+            await updateBan(ban.id, formData, token);
 
             setSuccess("Ban modificado correctamente.");
             await onUpdated();
@@ -108,7 +94,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
                                 onChange={handleChange}
                                 required
                                 min="1"
-                            />): (<span className="text-muted" className="me-2"> Ban inactivo</span>)}
+                            />): (<span className="text-muted me-2"> Ban inactivo</span>)}
                         </FormGroup>
                         <Row>
                             <Col md={6}>

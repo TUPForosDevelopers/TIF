@@ -1,21 +1,21 @@
-import {
-  getPost,
-  updatePostBody,
-} from "../../Services/postService.js";
+import { getPost, updatePostBody, deletePost } from "../postService.js";
+import { getForum } from "../forumService.js";
+import { getUser } from "../userService.js";
 
-const unavailable = (feature) => {
-  throw new Error(`${feature} todavía no está disponible en la API .NET.`);
+export const fetchPost = async (postId) => {
+  const post = await getPost(postId);
+  const [author, forum] = await Promise.allSettled([
+    getUser(post.userId),
+    getForum(post.forumId),
+  ]);
+  return {
+    ...post,
+    Person: author.status === "fulfilled" ? author.value : null,
+    Forum: forum.status === "fulfilled" ? forum.value : null,
+  };
 };
 
-export const fetchPost = getPost;
+export const updatePost = (postId, { body }, token) =>
+  updatePostBody(postId, body, token);
 
-export const updatePost = (postId, { body }) =>
-  updatePostBody(postId, body);
-
-export const fetchMyLike = () => unavailable("La consulta de likes");
-
-export const likePost = () => unavailable("La gestión de likes");
-
-export const deletePost = () => unavailable("La eliminación de publicaciones");
-
-export const makeUserAdmin = () => unavailable("El cambio de rol");
+export { deletePost };

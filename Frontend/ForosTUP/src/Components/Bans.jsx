@@ -1,3 +1,4 @@
+import { getBans, revokeBan } from "../Services/banService.js";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Table, Modal, Badge } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -12,6 +13,7 @@ const Bans = () => {
   const [selectedBan, setSelectedBan] = useState(null);
 
   const [bans, setBans] = useState([]);
+  const [loadedAt, setLoadedAt] = useState(Date.now);
   const [banLoadingId, setBanLoadingId] = useState(null);
   const [error, setError] = useState("");
 
@@ -20,19 +22,8 @@ const Bans = () => {
     try {
       setError("");
 
-      const response = await fetch("http://localhost:3000/bans", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "No se pudieron cargar los baneos");
-      }
-
-      setBans(data);
+      setBans(await getBans(token));
+      setLoadedAt(Date.now());
     } catch (error) {
       setError(error.message);
       setBans([]);
@@ -43,57 +34,14 @@ const Bans = () => {
     if (!token) return;
 
     cargarBans();
-  }, [cargarBans]);
+  }, [cargarBans, token]);
 
   const desban = async (ban) => {
     try {
       setBanLoadingId(ban.id);
 
-      const banDate = new Date(ban.date);
-
-      const expirationDate = new Date(banDate);
-
-      expirationDate.setDate(expirationDate.getDate() + ban.duration);
-
-      const today = new Date();
-
-      const diffTime = expirationDate - today;
-
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      let newDuration = ban.duration - diffDays;
-
-      if (newDuration < 0) {
-        newDuration = 0;
-      }
-
-      const respuesta = await fetch(`http://localhost:3000/bans/${ban.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: "desbaneado",
-        }),
-      });
-
-      const data = await respuesta.json();
-
-      if (!respuesta.ok) {
-        throw new Error(data.message || "Error al actualizar el ban");
-      }
-
-      setBans((prevBans) =>
-        prevBans.map((item) =>
-          item.id === ban.id
-            ? {
-              ...item,
-              status: "desbaneado",
-            }
-            : item
-        )
-      );
+      await revokeBan(ban.id, token);
+      await cargarBans();
 
       toast.success("Usuario desbaneado correctamente", {
         className: "toast-success-custom",
@@ -118,26 +66,10 @@ const Bans = () => {
   };
 
   const dayleft = (ban) => {
-    const banDate = new Date(ban.date);
-
-    const expirationDate = new Date(banDate);
-
-    expirationDate.setDate(expirationDate.getDate() + ban.duration);
-
-    const today = new Date();
-
-    const diffTime = expirationDate - today;
-
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    let mess = ""
-
-    if (diffDays > 0) {
-      if (diffDays == 1) { mess = "(1 dia restante)" }
-      else { mess = "(" + diffDays + " restantes)" }
-    } else { mess = "Finalizado" }
-    return mess
-  }
+    const days = Math.ceil((new Date(ban.endDate) - loadedAt) / 86400000);
+    if (ban.status !== "activo" || days <= 0) return "Finalizado";
+    return days === 1 ? "(1 día restante)" : `(${days} días restantes)`;
+  };
 
   return (
 
@@ -165,6 +97,9 @@ const Bans = () => {
           </thead>
 
           <tbody>
+            {!error && !bans.length && (
+              <tr><td colSpan={7}>No hay baneos registrados.</td></tr>
+            )}
             {bans.map((item) => (
               <tr key={item.id}>
                 <td>{item.bannedUser?.name || "Usuario no encontrado"}</td>
@@ -173,7 +108,7 @@ const Bans = () => {
 
                 <td>{item.reason}</td>
 
-                <td>{new Date(item.date).toLocaleDateString("es-AR")}</td>
+                <td>{new Date(item.startDate).toLocaleDateString("es-AR")}</td>
 
                 <td>
                   {item.duration === 1 ? "1 día" : `${item.duration} días`}
@@ -185,7 +120,7 @@ const Bans = () => {
                     bg={
                       item.status === "activo"
                         ? "success"
-                        : item.status === "desbaneado"
+                        : item.status === "revocado"
                           ? "secondary"
                           : "danger"
                     }
@@ -199,6 +134,7 @@ const Bans = () => {
 
                     size="sm"
                     onClick={() => openEditModal(item)}
+                    disabled={item.status !== "activo"}
                     className="me-2 btn btn-success"
                   >
                     Modificar
@@ -214,7 +150,7 @@ const Bans = () => {
                       {banLoadingId === item.id ? "Desbaneando..." : "Desbanear"}
                     </Button>
                   ) : (
-                    <span className="text-muted" className="me-2">Ban inactivo</span>
+                    <span className="text-muted me-2">Ban inactivo</span>
                   )}
                 </td>
               </tr>
