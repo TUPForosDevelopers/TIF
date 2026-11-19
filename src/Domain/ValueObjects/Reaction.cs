@@ -3,12 +3,12 @@ namespace MyApp.Domain.ValueObjects;
 
 public record Reaction
 {
-    public PostId? Post {get; init;}
-    public CommentId? Comment {get; init;}
-    public UserId User {get; init;}
-    public bool Type {get; init;}
+    public PostId? Post { get; init; }
+    public CommentId? Comment { get; init; }
+    public UserId User { get; init; }
+    public bool Type { get; private set; }
 
-    private Reaction(){}
+    private Reaction() { }
 
     public Reaction(PostId post, UserId user, bool type)
     {
@@ -23,5 +23,11 @@ public record Reaction
         Comment = comment;
         User = user;
         Type = type;
+    }
+
+    // cambia el tipo de reaccion sin crear otra
+    public void ChangeType(bool isLike)
+    {
+        Type = isLike;
     }
 }

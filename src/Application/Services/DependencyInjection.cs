@@ -11,8 +11,10 @@ public static class DependencyInjection
         services.AddScoped<PostServices>();
         services.AddScoped<CommentServices>();
         services.AddScoped<BanServices>();
+        services.AddScoped<ReactionServices>();
         services.AddScoped<ForumServices>();
         services.AddScoped<AuthServices>();
+        services.AddScoped<TimeServices>();
         // register other handlers here as you add them
 
         return services;
