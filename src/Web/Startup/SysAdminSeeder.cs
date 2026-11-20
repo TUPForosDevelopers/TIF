@@ -11,22 +11,24 @@ namespace MyApp.Web.Startup;
 
 internal static class SysAdminSeeder
 {
+    private const string DevelopmentEmail = "sysadmin@example.com";
+    private const string DevelopmentPasswordHash = "$2b$12$FkohxBAjL5ps20va5vmkKOXdW.pPcC7P2vuQ7UFApMinGXNV5s.UO";
+
     public static async Task SeedAsync(WebApplication app, CancellationToken cancellationToken)
     {
         var settings = app.Configuration.GetSection("SysAdminSeed");
         var configuredEmail = settings["Email"];
-        if (string.IsNullOrWhiteSpace(configuredEmail))
-            return;
-
-        var email = EmailAddress.Create(configuredEmail);
+        var email = EmailAddress.Create(string.IsNullOrWhiteSpace(configuredEmail)
+            ? DevelopmentEmail
+            : configuredEmail);
         await using var scope = app.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         var existing = await users.GetByEmail(email, cancellationToken);
         if (existing is null)
         {
             var password = settings["Password"];
-            if (string.IsNullOrWhiteSpace(password))
-                throw new InvalidOperationException("Configurá SysAdminSeed:Password para crear el SysAdmin inicial.");
+            if (string.IsNullOrWhiteSpace(password) && email.Value != DevelopmentEmail)
+                throw new InvalidOperationException("Configurá SysAdminSeed:Password para crear el SysAdmin con un correo personalizado.");
 
             if (!DateOnly.TryParseExact(settings["DateOfBirth"] ?? "2000-01-01", "yyyy-MM-dd",
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateOfBirth))
@@ -34,8 +36,8 @@ internal static class SysAdminSeeder
 
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             var clock = scope.ServiceProvider.GetRequiredService<IClock>();
-            var user = new User(settings["Name"] ?? "SysAdmin", dateOfBirth, email.Value,
-                hasher.Hash(password), clock.UtcNow);
+            var hash = string.IsNullOrWhiteSpace(password) ? DevelopmentPasswordHash : hasher.Hash(password);
+            var user = new User(settings["Name"] ?? "SysAdmin", dateOfBirth, email.Value, hash, clock.UtcNow);
             user.SetRole(UserRole.SysAdmin);
 
             try
