@@ -1,8 +1,7 @@
+import { showSuccessToast } from "../UtilityServices/successToast.jsx";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "react-toastify";
 import { useFieldValidation } from "../../hooks/useFieldValidation.js";
 import { submissionError, validateBody } from "../UtilityServices/formValidation.js";
-import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
 import {
   fetchPost,
   updatePost,
@@ -65,7 +64,7 @@ export const usePost = (postId, token) => {
       setSavingEdit(true);
       setEditError("");
       await updatePost(postId, { body: editBody.trim() }, token);
-      toast.success("Post actualizado correctamente", TOAST_SUCCESS);
+      showSuccessToast("Publicación guardada correctamente.");
       setEditing(false);
       await refresh();
     } catch (err) {
@@ -91,7 +90,7 @@ export const usePost = (postId, token) => {
       setDeleting(true);
       setDeleteError("");
       await deletePost(postId, token);
-      toast.success("El post ha sido eliminado correctamente", TOAST_SUCCESS);
+      showSuccessToast("Publicación eliminada correctamente.");
       setDeleteModalOpen(false);
       return true;
     } catch (err) {

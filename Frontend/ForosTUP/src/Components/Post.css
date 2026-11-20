@@ -70,7 +70,8 @@
 .post-comments-heading { font-size: 1.45rem; font-weight: 720; margin: 1.35rem 0 .75rem; }
 .post-comment-entry { padding: .85rem 1rem; margin-bottom: .75rem; }
 .post-comment-input-row { display: flex; align-items: center; gap: .65rem; }
-.post-comment-input { min-width: 0; }
+.post-comment-input { flex: 1 1 0; min-width: 0; }
+.post-comment-submit { flex: 0 0 auto; white-space: nowrap; }
 .post-comment-error, .thread-reply-error { color: #8c372f; font-size: .9rem; margin: .45rem 0 0; }
 
 .post-comments-thread > .thread-comment,

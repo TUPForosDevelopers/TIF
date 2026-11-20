@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "react-toastify";
 import { useFieldValidation } from "../../hooks/useFieldValidation.js";
 import { submissionError, validateBody } from "../UtilityServices/formValidation.js";
 import { showSuccessToast } from "../UtilityServices/successToast.jsx";
-import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
 import {
   fetchComments,
   createComment,
@@ -102,7 +100,7 @@ export const useComments = (postId, token) => {
       setSavingEdit(true);
       setEditError("");
       await updateComment(editingId, editText.trim(), token);
-      toast.success("Comentario actualizado", TOAST_SUCCESS);
+      showSuccessToast("Comentario guardado correctamente.");
       setEditingId(null);
       await refresh();
     } catch (err) {
@@ -162,7 +160,7 @@ export const useComments = (postId, token) => {
       setDeletingComment(true);
       setDeleteError("");
       await deleteComment(commentToDelete.id, token);
-      toast.success("El comentario ha sido borrado", TOAST_SUCCESS);
+      showSuccessToast("Comentario eliminado correctamente.");
       setCommentToDelete(null);
       setReplyingId(null);
       setEditingId(null);

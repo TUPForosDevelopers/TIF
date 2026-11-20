@@ -1,3 +1,4 @@
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
 import { createBan } from "../Services/banService.js";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Card, Col, Form, FormGroup, Row } from "react-bootstrap";
@@ -113,10 +114,7 @@ const NewBan = () => {
       setError("");
 
       await createBan(formData, token);
-      toast.success("Usuario baneado correctamente", {
-      className: "toast-success-custom",
-      progressClassName: "toast-progress-custom",
-    });
+      showSuccessToast("Usuario baneado correctamente");
 
       navigate(-1);
       

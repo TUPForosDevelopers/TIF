@@ -56,7 +56,7 @@ export default function NewPost() {
             onChange={(event) => { setBody(event.target.value); setError(""); }} />
           <div className="validation-details">
             <ValidationMessage id="new-post-body-error">{validation.show("body")}</ValidationMessage>
-            <span className="validation-counter" data-over={count > BODY_MAX}>{count} {count === 1 ? "carácter" : "caracteres"}</span>
+            <span className="validation-counter" data-over={Boolean(validation.show("body")) && count > BODY_MAX}>{count} {count === 1 ? "carácter" : "caracteres"}</span>
           </div>
           <div className="salvia-editor-actions">
             <Link className="btn salvia-secondary" to={`/forum/${forumId}`}>Cancelar</Link>

@@ -1,3 +1,4 @@
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
 import { getBans, revokeBan } from "../Services/banService.js";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Table, Modal, Badge } from "react-bootstrap";
@@ -43,10 +44,7 @@ const Bans = () => {
       await revokeBan(ban.id, token);
       await cargarBans();
 
-      toast.success("Usuario desbaneado correctamente", {
-        className: "toast-success-custom",
-        progressClassName: "toast-progress-custom",
-      });
+      showSuccessToast("Usuario desbaneado correctamente");
 
     } catch (error) {
       toast.error(error.message || "No se pudo desbanear el usuario");

@@ -1,8 +1,3 @@
-export const TOAST_SUCCESS = {
-  className: "toast-success-custom",
-  progressClassName: "toast-progress-custom",
-};
-
 export const formatDate = (date) => {
   if (!date) return "Hace un rato";
   const d = new Date(date);

@@ -1,3 +1,4 @@
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -9,7 +10,6 @@ import {
   FormGroup,
   Row,
 } from "react-bootstrap";
-import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, updateUser } from "../Services/userService.js";
@@ -113,10 +113,7 @@ const UserEdit = () => {
       };
       await updateUser(changes, token);
       login(await getCurrentUser(token), token);
-      toast.success("Perfil actualizado correctamente.", {
-        className: "toast-success-custom",
-        progressClassName: "toast-progress-custom",
-      });
+      showSuccessToast("Perfil actualizado correctamente.");
       setTimeout(() => navigate(-1), 800);
     } catch (updateError) {
       setError(updateError.message || "Error conectando con el servidor");

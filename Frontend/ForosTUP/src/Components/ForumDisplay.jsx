@@ -1,3 +1,4 @@
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
 import { Alert, Button, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -15,6 +16,7 @@ export default function ForumDisplay({ forum, onDelete }) {
     setError("");
     try {
       await deleteForum(forum.id, token);
+      showSuccessToast("Foro eliminado correctamente.");
       setConfirming(false);
       onDelete();
     } catch (error) {

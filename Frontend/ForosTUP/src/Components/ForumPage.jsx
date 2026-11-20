@@ -1,3 +1,4 @@
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
 import ForumFields from "./ForumFields.jsx";
 import ValidationMessage from "./ValidationMessage.jsx";
 import { useFieldValidation } from "../hooks/useFieldValidation.js";
@@ -35,6 +36,7 @@ function ForumDetail({ forumId }) {
     setSaving(true);
     try {
       await updateForum(forumId, draft, token);
+      showSuccessToast("Foro guardado correctamente.");
       setDraft(null);
       await forumResource.refetch();
     } catch (error) {

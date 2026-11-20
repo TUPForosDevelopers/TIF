@@ -18,7 +18,7 @@ export default function ForumFields({ values, onChange, validation }) {
           onChange={(event) => onChange({ ...values, [name]: event.target.value })} />
         <div className="validation-details">
           <ValidationMessage id={`${field.id}-error`}>{validation.show(name)}</ValidationMessage>
-          <span className="validation-counter" data-over={count > max}>{count} / {max}</span>
+          <span className="validation-counter" data-over={Boolean(validation.show(name)) && count > max}>{count} / {max}</span>
         </div>
       </div>
     );

@@ -1,6 +1,6 @@
+import { showSuccessToast } from "../UtilityServices/successToast.jsx";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
 import { makeUserAdmin } from "../userService.js";
 
 export const useMakeAdmin = (token, onSuccess) => {
@@ -25,7 +25,7 @@ export const useMakeAdmin = (token, onSuccess) => {
       setLoading(true);
       setError("");
       await makeUserAdmin(targetUser.id, token);
-      toast.success("Usuario convertido en ADMIN correctamente", TOAST_SUCCESS);
+      showSuccessToast("Usuario convertido en administrador.");
       setTargetUser(null);
       onSuccess?.();
     } catch (err) {

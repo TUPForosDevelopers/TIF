@@ -56,7 +56,7 @@ export default function RoutesDoc() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <ToastContainer position="top-center" autoClose={3000} pauseOnHover theme="colored" />
+      <ToastContainer position="top-center" autoClose={3000} pauseOnHover theme="light" toastClassName="salvia-toast" icon={false} />
     </BrowserRouter>
   );
 }

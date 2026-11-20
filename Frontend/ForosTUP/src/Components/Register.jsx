@@ -20,10 +20,9 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [emailError, setEmailError] = useState("");
   const validation = useFieldValidation({
     name: form.name.trim() ? "" : "Ingresá tu nombre.",
-    email: validateEmail(form.email) || emailError,
+    email: validateEmail(form.email),
     dateOfBirth: validateBirthDate(form.dateOfBirth),
     password: form.password.trim() ? "" : "Ingresá tu contraseña.",
     confirmPassword: !form.confirmPassword ? "Confirmá tu contraseña." :
@@ -41,7 +40,7 @@ export default function Register() {
       navigate("/login", { replace: true, state: { email: form.email.trim(), from: state?.from, registered: true } });
     } catch (error) {
       if (error.status === 400 && error.message === "Email is already registered.") {
-        setEmailError("Este correo ya está registrado.");
+        validation.report("email", "Este correo ya está registrado.");
         document.getElementById("register-email")?.focus();
       } else {
         setError(submissionError(error, "No pudimos crear la cuenta. Revisá los datos e intentá de nuevo."));
@@ -65,7 +64,6 @@ export default function Register() {
                   autoComplete={autoComplete} value={form[name]} required
                   onChange={(event) => {
                     setForm({ ...form, [name]: event.target.value });
-                    if (name === "email") setEmailError("");
                     setError("");
                   }} />
                 <ValidationMessage id={`register-${name}-error`}>{validation.show(name)}</ValidationMessage>
