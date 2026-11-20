@@ -1,0 +1,352 @@
+.salvia-layout,
+.salvia-dialog {
+  --salvia-paper: #eeebe3;
+  --salvia-card: #f7f4ec;
+  --salvia-ink: #27332b;
+  --salvia-muted: #4d5950;
+  --salvia-border: #d2d2c7;
+  --salvia-field-border: #8e988d;
+  --salvia-tint: #dfe5d8;
+  --salvia-primary: #536d5b;
+  --salvia-primary-hover: #425a49;
+  color: var(--salvia-ink);
+}
+
+.salvia-layout {
+  --bs-body-color: var(--salvia-ink);
+  --bs-body-bg: var(--salvia-paper);
+  --bs-link-color-rgb: 62, 87, 71;
+  --bs-link-hover-color-rgb: 41, 66, 52;
+  min-height: 100vh;
+  background-color: var(--salvia-paper);
+}
+
+.salvia-layout :focus-visible {
+  outline: 2px solid var(--salvia-primary);
+  outline-offset: 3px;
+}
+
+.salvia-header {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.salvia-header .app-navbar {
+  min-height: 64px;
+  background: var(--salvia-paper);
+  border-bottom: 1px solid var(--salvia-border);
+  box-shadow: none;
+}
+
+.salvia-header .app-navbar-container {
+  min-height: 64px;
+  height: auto;
+  padding: .35rem clamp(1rem, 5vw, 4.75rem);
+}
+
+.salvia-header .app-navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  margin-right: 2rem;
+  color: var(--salvia-ink) !important;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -.035em;
+}
+
+.salvia-header .app-navbar-link {
+  color: var(--salvia-ink) !important;
+  font-weight: 600;
+}
+
+.salvia-header .app-navbar-link.active,
+.salvia-header .app-navbar-link:hover {
+  background: var(--salvia-tint);
+  transform: none;
+}
+
+.salvia-header .app-navbar-user { gap: .3rem; }
+.salvia-header .app-navbar-toggle { border-color: var(--salvia-border); }
+
+.salvia-header .app-navbar-username .dropdown-toggle {
+  display: inline-flex;
+  gap: .55rem;
+  align-items: center;
+  border-color: transparent;
+  color: var(--salvia-ink);
+  background: transparent;
+  font-weight: 550;
+}
+
+.salvia-header .app-navbar-username .dropdown-toggle:hover,
+.salvia-header .app-navbar-username .dropdown-toggle.show {
+  background: var(--salvia-tint);
+}
+
+.salvia-header .app-navbar-dropdown .dropdown-menu {
+  transform: none !important;
+  inset: 100% 0 auto auto !important;
+  box-shadow: 0 8px 18px #26332b14;
+}
+
+.salvia-layout .dropdown-menu {
+  --bs-dropdown-bg: var(--salvia-card);
+  --bs-dropdown-border-color: var(--salvia-border);
+  --bs-dropdown-link-hover-bg: var(--salvia-tint);
+  --bs-dropdown-link-active-bg: var(--salvia-primary);
+}
+
+.salvia-container {
+  width: min(1280px, calc(100% - clamp(2rem, 12vw, 12rem)));
+  margin-inline: auto;
+}
+
+.salvia-title {
+  margin-bottom: .4rem;
+  font-size: clamp(2rem, 3.25vw, 2.8rem);
+  font-weight: 750;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+
+.salvia-lede { color: var(--salvia-muted); font-size: 1.075rem; }
+.salvia-panel { background: var(--salvia-card); border: 1px solid var(--salvia-border); border-radius: .7rem; }
+
+.salvia-layout .salvia-primary {
+  --bs-btn-color: #fbf8ef;
+  --bs-btn-bg: var(--salvia-primary);
+  --bs-btn-border-color: var(--salvia-primary);
+  --bs-btn-hover-color: #fbf8ef;
+  --bs-btn-hover-bg: var(--salvia-primary-hover);
+  --bs-btn-hover-border-color: var(--salvia-primary-hover);
+  --bs-btn-active-color: #fbf8ef;
+  --bs-btn-active-bg: var(--salvia-primary-hover);
+  --bs-btn-active-border-color: var(--salvia-primary-hover);
+  --bs-btn-disabled-color: #fbf8ef;
+  --bs-btn-disabled-bg: var(--salvia-primary);
+  --bs-btn-disabled-border-color: var(--salvia-primary);
+  padding: .54rem 1rem;
+  font-weight: 650;
+}
+
+.salvia-layout .salvia-secondary {
+  --bs-btn-color: var(--salvia-ink);
+  --bs-btn-border-color: var(--salvia-field-border);
+  --bs-btn-hover-color: var(--salvia-ink);
+  --bs-btn-hover-bg: var(--salvia-tint);
+  --bs-btn-hover-border-color: var(--salvia-field-border);
+  --bs-btn-active-bg: var(--salvia-tint);
+  --bs-btn-active-color: var(--salvia-ink);
+  --bs-btn-active-border-color: var(--salvia-primary);
+}
+
+.salvia-layout .form-control,
+.salvia-layout .form-select {
+  min-height: 2.55rem;
+  border-color: var(--salvia-field-border);
+  background-color: var(--salvia-card);
+  color: var(--salvia-ink);
+}
+
+.salvia-layout :is(.form-control, .form-select):focus {
+  border-color: var(--salvia-primary);
+  box-shadow: 0 0 0 .19rem #536d5b28;
+}
+
+.salvia-layout .form-control::placeholder { color: var(--salvia-muted); opacity: 1; }
+.salvia-layout .form-control.is-invalid { border-color: #a5413b; }
+
+.salvia-mark {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 1.65em;
+  height: 1.12em;
+  color: var(--salvia-primary-hover);
+}
+
+.salvia-mark::before,
+.salvia-mark::after {
+  position: absolute;
+  width: 1.03em;
+  height: .72em;
+  border: .09em solid currentColor;
+  border-radius: .25em .25em .25em .06em;
+  content: "";
+}
+
+.salvia-mark::before { top: .07em; left: 0; z-index: 1; background: var(--salvia-mark-bg, var(--salvia-paper)); }
+.salvia-mark::after { bottom: .06em; right: 0; border-radius: .25em .25em .06em .25em; }
+
+.salvia-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: var(--salvia-ink);
+  background: var(--salvia-tint);
+  font-size: .76rem;
+  font-weight: 650;
+}
+
+.salvia-home {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 2.7rem;
+  padding: clamp(1.4rem, 4vw, 3rem);
+  border: 1px solid var(--salvia-border);
+  border-radius: .75rem;
+  background: var(--salvia-tint);
+}
+
+.salvia-home h1 { font-size: clamp(2.1rem, 4vw, 3.15rem); font-weight: 750; letter-spacing: -.045em; }
+.salvia-home p { color: var(--salvia-muted); }
+.salvia-home > .salvia-mark { --salvia-mark-bg: var(--salvia-tint); font-size: clamp(2rem, 5vw, 4rem); opacity: .7; }
+
+.salvia-directory { padding-block: 3rem 4.5rem; }
+.salvia-home + .salvia-directory .salvia-title { font-size: 2rem; }
+.salvia-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.salvia-directory .salvia-toolbar { margin: 1.65rem 0 2rem; }
+.salvia-search { position: relative; min-width: 0; flex: 1; }
+.salvia-directory .salvia-search { max-width: 34rem; }
+.salvia-search .form-control { padding-left: 2.4rem; }
+.salvia-search-icon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: .85rem;
+  width: .8rem;
+  height: .8rem;
+  transform: translateY(-63%);
+  border: 1.5px solid var(--salvia-muted);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.salvia-search-icon::after {
+  position: absolute;
+  right: -.3rem;
+  bottom: -.13rem;
+  width: .35rem;
+  height: 1.5px;
+  transform: rotate(45deg);
+  background-color: var(--salvia-muted);
+  content: "";
+}
+
+.salvia-forum-grid,
+.salvia-publication-list { margin: 0; padding: 0; list-style: none; }
+
+.salvia-forum-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1100px) {
+  .salvia-forum-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.salvia-forum-card { display: flex; flex-direction: column; min-width: 0; }
+.salvia-card-link { position: relative; flex: 1; padding: 1.2rem 2.4rem 1.2rem 1.25rem; color: inherit; text-decoration: none; border-radius: inherit; }
+.salvia-card-link:hover,
+.salvia-card-link:focus-visible { background: var(--salvia-tint); color: var(--salvia-ink); }
+.salvia-card-heading { display: flex; gap: .8rem; align-items: center; margin-bottom: .65rem; }
+.salvia-card-heading h3 { margin: 0; font-size: 1.2rem; font-weight: 700; }
+.salvia-forum-icon { --salvia-mark-bg: var(--salvia-tint); display: grid; flex: none; place-items: center; width: 2.55rem; height: 2.55rem; border-radius: .5rem; background: var(--salvia-tint); font-size: .85rem; }
+.salvia-card-arrow { position: absolute; top: 50%; right: .95rem; transform: translateY(-50%); color: var(--salvia-primary-hover); font-size: 1.3rem; }
+.salvia-card-link p { margin: 0; color: var(--salvia-muted); }
+.salvia-delete-forum { align-self: flex-start; color: #893e37; background: transparent; border: 0; padding: .25rem .35rem; margin: 0 0 .7rem .9rem; font-size: .85rem; text-decoration: underline; }
+
+.salvia-breadcrumb { display: flex; flex-wrap: wrap; gap: .55rem; color: var(--salvia-muted); font-size: .9rem; margin-bottom: .75rem; }
+.salvia-breadcrumb a { text-decoration: none; }
+.salvia-breadcrumb a:hover { text-decoration: underline; }
+
+.salvia-forum-page { padding-block: 1.8rem 4.5rem; }
+.salvia-forum-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.55rem; }
+.salvia-forum-controls { flex-wrap: wrap; justify-content: end; }
+.salvia-forum-editor { padding: 1.25rem; margin-bottom: 1rem; }
+.salvia-forum-editor label { display: block; font-weight: 600; margin-bottom: .8rem; }
+.salvia-forum-editor .form-control { margin-top: .3rem; }
+.salvia-editor-actions { display: flex; justify-content: end; gap: .6rem; }
+
+.salvia-forum-columns { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(15rem, 1fr); align-items: start; gap: 1rem; }
+.salvia-publications,
+.salvia-forum-sidebar .salvia-panel { padding: 1.2rem 1.3rem; min-width: 0; }
+.salvia-forum-columns h2 { font-size: 1.3rem; font-weight: 725; margin-bottom: .85rem; }
+.salvia-forum-sidebar { display: grid; gap: .95rem; }
+.salvia-forum-sidebar p,
+.salvia-forum-sidebar ul { color: var(--salvia-muted); margin-bottom: 0; }
+.salvia-forum-sidebar ul { padding-left: 1.15rem; }
+.salvia-forum-sidebar li + li { margin-top: .4rem; }
+
+.salvia-publications-toolbar { margin-bottom: 1rem; }
+.salvia-publications-toolbar .form-select { width: auto; max-width: 48%; }
+.salvia-publication-list li { border-top: 1px solid var(--salvia-border); }
+.salvia-publication-list a { display: block; padding: .9rem .25rem; text-decoration: none; color: inherit; }
+.salvia-publication-list a:hover h3 { text-decoration: underline; color: var(--salvia-primary-hover); }
+.salvia-publication-list h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: .35rem; }
+.salvia-publication-list p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: .5rem;
+  color: var(--salvia-muted);
+}
+.salvia-byline { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; color: var(--salvia-muted); font-size: .86rem; }
+.salvia-byline .salvia-avatar { width: 1.65rem; height: 1.65rem; }
+.salvia-panel,
+.salvia-home { overflow-wrap: anywhere; }
+.salvia-empty { padding: 1.45rem 0; margin: 0; color: var(--salvia-muted); }
+.salvia-empty p { margin-bottom: .55rem; }
+
+.salvia-auth {
+  display: grid;
+  min-height: calc(100vh - 65px);
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.salvia-auth-card { width: min(100%, 31rem); padding: clamp(1.35rem, 3.4vw, 2.2rem); }
+.salvia-register-card { width: min(100%, 45rem); }
+.salvia-auth-card h1 { font-size: clamp(1.8rem, 3vw, 2.45rem); margin: 0 0 .55rem; font-weight: 750; letter-spacing: -.04em; }
+.salvia-auth-card > .salvia-lede { margin-bottom: 1.25rem; }
+.salvia-form { margin-top: 1.3rem; }
+.salvia-form label { display: block; font-weight: 650; margin-bottom: .35rem; }
+.salvia-form > input + label { margin-top: 1rem; }
+.salvia-auth .form-control { min-height: 2.75rem; }
+.salvia-password { position: relative; }
+.salvia-password input { padding-right: 5rem; }
+.salvia-password-toggle { position: absolute; inset: .34rem .35rem .34rem auto; background: transparent; border: 0; border-radius: .25rem; color: var(--salvia-primary-hover); font-size: .86rem; font-weight: 600; padding-inline: .5rem; }
+.salvia-password-toggle:hover { background: var(--salvia-tint); }
+.salvia-register-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .95rem 1.15rem; }
+.salvia-full-field { grid-column: 1 / -1; }
+.salvia-auth-submit { width: 100%; min-height: 2.75rem; margin-top: 1.45rem; }
+.salvia-auth-footer { text-align: center; margin: 1.1rem 0 0; color: var(--salvia-muted); }
+.salvia-auth-footer a { font-weight: 650; text-underline-offset: .15em; }
+
+.salvia-dialog .modal-content {
+  color: var(--salvia-ink);
+  background: var(--salvia-card);
+  border: 1px solid var(--salvia-border);
+  box-shadow: 0 14px 40px #26332b28;
+}
+.salvia-dialog .modal-header,
+.salvia-dialog .modal-footer { border-color: var(--salvia-border); }
+.salvia-dialog :is(.modal-title, .modal-body) { color: var(--salvia-ink); }
+.salvia-dialog .modal-header .btn-close { filter: none; }
+.salvia-dialog .modal-footer .btn-secondary { color: var(--salvia-ink); background: var(--salvia-tint); border-color: var(--salvia-field-border); }
+.salvia-dialog .modal-footer .btn-danger { background: #933f38; border-color: #933f38; box-shadow: none; }
+.salvia-dialog .modal-body .alert-danger { color: #732e28; background: #f3e1d9; border-color: #c99b8d; }
+
+@media (max-width: 700px) {
+  .salvia-forum-columns, .salvia-register-fields { grid-template-columns: minmax(0, 1fr); }
+  .salvia-forum-header { align-items: start; flex-direction: column; }
+}

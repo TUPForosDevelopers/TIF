@@ -1,10 +1,11 @@
 import ReactionActions from "./ReactionActions.jsx";
-import { Alert, Button, Form, Modal } from "react-bootstrap";
+import { Alert, Button, Dropdown, Form, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { formatBodyText } from "../Services/imgUtils/imgUtils.js";
 import {
   formatDate,
   getInitial,
+  getPostPreview,
   getRoleLabel,
   getRoleClass,
 } from "../Services/UtilityServices/postUtils";
@@ -49,6 +50,11 @@ const PostBody = ({
   const authorRole = post.Person?.role;
   const forumName = post.Forum?.name || "Foro";
   const forumId = post.Forum?.id || post.forumId;
+  const { heading } = getPostPreview(post);
+  const canEdit = canEditPost(post) && post.Forum?.status !== false && !post.hidden && !editing;
+  const canDelete = canDeletePost(post);
+  const canBan = canBanUser(post.Person);
+  const canPromote = canMakeAdmin(post.Person);
 
   const goToBanForm = (target) =>
     navigate(
@@ -73,54 +79,39 @@ const PostBody = ({
 
   return (
     <>
-      <div className="post-thread-breadcrumb">
+      <nav className="salvia-breadcrumb" aria-label="Ubicación">
         <Link to="/foros">Foros</Link>
-        <span>›</span>
+        <span aria-hidden="true">/</span>
         {forumId ? <Link to={`/forum/${forumId}`}>{forumName}</Link> : <span>{forumName}</span>}
-        <span>›</span>
-        <span>{post.title || "Publicación"}</span>
-      </div>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">Publicación</span>
+      </nav>
 
-      <article className="post-main-block">
+      <article className="salvia-panel post-main-block">
         <div className="post-main-meta">
           <div className="post-main-avatar">{getInitial(authorName)}</div>
           <div className="post-main-author-row">
             <span className="post-main-author">{authorName}</span>
-            <span className={`user-role-badge ${getRoleClass(authorRole)}`}>
-              {getRoleLabel(authorRole)}
-            </span>
-
-            {isBannedUser(post.Person) ? (
-              <button type="button" className="ban-user-link banned-user-link" disabled>
-                Baneado
-              </button>
-            ) : (
-              canBanUser(post.Person) && (
-                <button
-                  type="button"
-                  className="ban-user-link"
-                  onClick={() => goToBanForm(post.Person)}
-                >
-                  Banear
-                </button>
-              )
+            {authorRole && authorRole !== "USER" && (
+              <span className={`user-role-badge ${getRoleClass(authorRole)}`}>{getRoleLabel(authorRole)}</span>
             )}
-
-            {canMakeAdmin(post.Person) && (
-              <button
-                type="button"
-                className="make-admin-link"
-                onClick={() => onMakeAdminClick(post.Person)}
-              >
-                Hacer admin
-              </button>
-            )}
-
+            {isBannedUser(post.Person) && <span className="user-role-badge">Baneado</span>}
             <span className="post-main-dot">•</span>
             <span className="post-main-date">
               {formatDate(post.postDate || post.createdAt)}
             </span>
           </div>
+          {(canEdit || canDelete || canBan || canPromote) && (
+            <Dropdown align="end" className="post-action-menu">
+              <Dropdown.Toggle variant="outline-secondary" size="sm" aria-label="Acciones de la publicación">⋯</Dropdown.Toggle>
+              <Dropdown.Menu>
+                {canEdit && <Dropdown.Item onClick={() => requireAuth(startEdit)}>Editar publicación</Dropdown.Item>}
+                {canDelete && <Dropdown.Item onClick={handleOpenDeleteModal}>Eliminar publicación</Dropdown.Item>}
+                {canBan && <Dropdown.Item onClick={() => goToBanForm(post.Person)}>Banear</Dropdown.Item>}
+                {canPromote && <Dropdown.Item onClick={() => onMakeAdminClick(post.Person)}>Hacer admin</Dropdown.Item>}
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
         </div>
 
         {editing ? (
@@ -129,6 +120,7 @@ const PostBody = ({
               <Form.Control
                 as="textarea"
                 rows={4}
+                aria-label="Editar contenido de la publicación"
                 value={editBody}
                 onChange={(e) => {
                   setEditBody(e.target.value);
@@ -139,7 +131,7 @@ const PostBody = ({
             </Form.Group>
             {editError && <Alert variant="danger">{editError}</Alert>}
             <div className="thread-reply-actions">
-              <Button type="submit" disabled={savingEdit}>
+              <Button type="submit" className="salvia-primary" disabled={savingEdit}>
                 {savingEdit ? "Guardando..." : "Guardar"}
               </Button>
               <button type="button" className="thread-reply-cancel" onClick={cancelEdit}>
@@ -149,7 +141,7 @@ const PostBody = ({
           </Form>
         ) : (
           <>
-            <h1 className="post-main-title">{post.title || "Publicación"}</h1>
+            <h1 className="post-main-title">{heading}</h1>
             <p
               className="post-main-description"
               dangerouslySetInnerHTML={{ __html: formatBodyText(post.body) }}
@@ -161,31 +153,10 @@ const PostBody = ({
           {!post.hidden && post.Forum?.status !== false && (
             <ReactionActions resource="Post" id={post.id} token={token} requireAuth={requireAuth} />
           )}
-          {canEditPost(post) && post.Forum?.status !== false && !post.hidden && !editing && (
-            <Button
-              type="button"
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => requireAuth(startEdit)}
-            >
-              Editar post
-            </Button>
-          )}
-
-          {canDeletePost(post) && (
-            <Button
-              type="button"
-              variant="outline-danger"
-              size="sm"
-              onClick={handleOpenDeleteModal}
-            >
-              Eliminar post
-            </Button>
-          )}
         </div>
       </article>
 
-      <Modal show={deleteModalOpen} onHide={closeDeleteModal} centered>
+      <Modal dialogClassName="salvia-dialog" show={deleteModalOpen} onHide={closeDeleteModal} centered>
         <Modal.Header closeButton={!deleting}>
           <Modal.Title>Borrar post</Modal.Title>
         </Modal.Header>

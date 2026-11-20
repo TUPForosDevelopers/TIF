@@ -42,28 +42,28 @@ const CommentSection = ({
 
   return (
     <>
-      {!readOnly && <section className="post-comment-entry">
+      <h2 className="post-comments-heading">Comentarios</h2>
+      {!readOnly && <section className="salvia-panel post-comment-entry">
         <Form onSubmit={(event) => {
           event.preventDefault();
           requireAuth(() => submitComment(event));
         }} noValidate>
           <div className="post-comment-input-row">
-            <div className="post-comment-user-avatar">{getInitial(user?.name || "U")}</div>
+            <div className="post-comment-user-avatar" aria-hidden="true">{getInitial(user?.name || "U")}</div>
             <Form.Control
               type="text"
               className="post-comment-input"
-              placeholder="Unite a la conversación"
+              placeholder="Escribí un comentario…"
+              aria-label="Escribí un comentario"
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
               isInvalid={!!createError}
             />
+            <Button type="submit" className="salvia-primary post-comment-submit" disabled={creating}>
+              {creating ? "Comentando…" : "Comentar"}
+            </Button>
           </div>
-          <Form.Control.Feedback type="invalid" className="post-comment-error d-block">
-            {createError}
-          </Form.Control.Feedback>
-          <Button type="submit" className="post-comment-submit" disabled={creating}>
-            {creating ? "Comentando..." : "Comentar"}
-          </Button>
+          {createError && <p role="alert" className="post-comment-error">{createError}</p>}
         </Form>
       </section>}
 
@@ -84,7 +84,7 @@ const CommentSection = ({
         )}
       </section>
 
-      <Modal show={!!commentToDelete} onHide={closeDeleteModal} centered>
+      <Modal dialogClassName="salvia-dialog" show={!!commentToDelete} onHide={closeDeleteModal} centered>
         <Modal.Header closeButton={!deletingComment}>
           <Modal.Title>Borrar comentario</Modal.Title>
         </Modal.Header>

@@ -86,7 +86,7 @@ const Post = ({ postId }) => {
           readOnly={post.post.hidden || post.post.Forum?.status === false}
         />
       </section>
-      <Modal show={!!promotion.targetUser} onHide={promotion.close} centered>
+      <Modal dialogClassName="salvia-dialog" show={!!promotion.targetUser} onHide={promotion.close} centered>
         <Modal.Header closeButton={!promotion.loading}>
           <Modal.Title>Hacer admin</Modal.Title>
         </Modal.Header>

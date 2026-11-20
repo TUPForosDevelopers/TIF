@@ -1,41 +1,27 @@
-import { authenticate, getCurrentUser } from "../Services/userService.js";
-import { useAuth } from "../context/AuthContext";
-import "./LogIn.css";
 import { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { authenticate, getCurrentUser } from "../Services/userService.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
-const LogIn = () => {
+export default function LogIn() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { login } = useAuth();
-
-  const [form, setForm] = useState({
-    correo: "",
-    password: "",
-  });
-
+  const [email, setEmail] = useState(state?.email || "");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (event) => {
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    });
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      const token = await authenticate(form.correo, form.password);
-      const user = await getCurrentUser(token);
-      login(user, token);
+      const token = await authenticate(email, password);
+      login(await getCurrentUser(token), token);
       navigate(state?.from || "/main", { replace: true });
-
     } catch (error) {
       setError(error.message);
     } finally {
@@ -43,84 +29,33 @@ const LogIn = () => {
     }
   };
 
-return (
-    <main className="login-page login-page-light">
-      <Container>
-        <Row className="justify-content-center">
-          <Col xs={12} sm={10} md={7} lg={5} xl={4}>
-            <Card className="login-card">
-              <Card.Body className="login-card-body">
-                <div className="login-header">
-                  <div className="login-badge">Foro TUP</div>
-
-                  <h2 className="login-title">Iniciar sesión</h2>
-
-                  <p className="login-subtitle">
-                    Entrá y participá en el Gran Foro TUP
-                  </p>
-                </div>
-
-                {error && (
-                  <Alert variant="danger" className="login-alert">
-                    {error}
-                  </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Correo electrónico
-                    </Form.Label>
-
-                    <Form.Control
-                      className="login-input"
-                      type="email"
-                      name="correo"
-                      placeholder="ejemplo@mail.com"
-                      value={form.correo}
-                      onChange={handleChange}
-                      autoComplete="email"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-4">
-                    <Form.Label className="login-label">
-                      Contraseña
-                    </Form.Label>
-
-                    <Form.Control
-                      className="login-input"
-                      type="password"
-                      name="password"
-                      placeholder="Ingresá tu contraseña"
-                      value={form.password}
-                      onChange={handleChange}
-                      autoComplete="current-password"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Button
-                    type="submit"
-                    className="login-button"
-                    disabled={loading}
-                  >
-                    {loading ? "Ingresando..." : "Iniciar sesión"}
-                  </Button>
-                </Form>
-
-                <div className="login-footer">
-                  <span>¿No tenés cuenta?</span>{" "}
-                  <Link to="/register">Registrate</Link>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+  return (
+    <main className="salvia-auth">
+      <section className="salvia-panel salvia-auth-card" aria-labelledby="login-title">
+        <h1 id="login-title">Iniciar sesión</h1>
+        <p className="salvia-lede">Entrá para participar en los foros.</p>
+        {state?.registered && <Alert variant="success">Cuenta creada. Ya podés iniciar sesión.</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
+        <form className="salvia-form" onSubmit={handleSubmit}>
+          <label htmlFor="login-email">Correo electrónico</label>
+          <input id="login-email" name="correo" className="form-control" type="email" autoComplete="email"
+            value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <label htmlFor="login-password">Contraseña</label>
+          <div className="salvia-password">
+            <input id="login-password" name="password" className="form-control"
+              type={showPassword ? "text" : "password"} autoComplete="current-password"
+              value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <button className="salvia-password-toggle" type="button" aria-controls="login-password"
+              onClick={() => setShowPassword((visible) => !visible)}>
+              {showPassword ? "Ocultar" : "Mostrar"}
+            </button>
+          </div>
+          <button className="btn salvia-primary salvia-auth-submit" disabled={loading}>
+            {loading ? "Ingresando…" : "Ingresar"}
+          </button>
+        </form>
+        <p className="salvia-auth-footer">¿Todavía no tenés cuenta? <Link to="/register" state={{ from: state?.from }}>Crear cuenta</Link></p>
+      </section>
     </main>
   );
-};
-
-export default LogIn;
+}

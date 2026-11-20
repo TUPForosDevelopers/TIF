@@ -1,19 +1,21 @@
-import "./MainPage.css";
-import Forums from "./Forums.jsx";
-import { useApiResource } from "../hooks/useApiResource.js";
-import { getForums } from "../Services/forumService.js";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+import ForumListPage from "./ForumListPage.jsx";
 
-const MainPage = () => {
-  const { data: forums, loading, error } = useApiResource(
-    getForums,
-    undefined,
-    []
+export default function MainPage() {
+  const { user } = useAuth();
+
+  return (
+    <main>
+      <section className="salvia-container salvia-home">
+        <div>
+          <h1>{user?.name ? `Bienvenido, ${user.name}` : "ForosTUP"}</h1>
+          <p>Compartí consultas, ideas y proyectos con la comunidad de la TUP.</p>
+          <Link className="btn salvia-primary" to="/foros">Explorar foros</Link>
+        </div>
+        <span className="salvia-mark" aria-hidden="true" />
+      </section>
+      <ForumListPage embedded />
+    </main>
   );
-
-  if (loading) return <p>Cargando foros...</p>;
-  if (error) return <p>Error: {error}</p>;
-
-  return <Forums forumsProp={forums} />;
-};
-
-export default MainPage;
+}

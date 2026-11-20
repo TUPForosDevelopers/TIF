@@ -1,300 +1,170 @@
-import { formatDate } from "../Services/UtilityServices/postUtils.js";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { Form, Row, Col, Card, Spinner, Alert, Button } from "react-bootstrap";
-import { useApiResource } from "../hooks/useApiResource.js";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Alert, Spinner } from "react-bootstrap";
 import { getForum, updateForum } from "../Services/forumService.js";
 import { getPostsByForum } from "../Services/postService.js";
 import { useRequireAuth } from "../Services/Hooks/useRequireAuth.js";
-import "./ForumPage.css";
-import { useState } from "react";
+import { formatDate, getInitial, getPostPreview, normalizeSearch } from "../Services/UtilityServices/postUtils.js";
+import { useApiResource } from "../hooks/useApiResource.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { toast } from "react-toastify";
 import Redirecting from "./Redirecting.jsx";
 
-const ForumPage = () => {
-  // obtiene el id del foro desde la url
-  const { forumId } = useParams();
-
-
+function ForumDetail({ forumId }) {
   const navigate = useNavigate();
-
-  // activación de los campos de edición
-  const { isAdmin, isSysAdmin, token } = useAuth()
-  const [editForumName, setEditForumName] = useState(false);
-  const [editForumDesc, setEditForumDesc] = useState(false);
-  const [editedName, setEditedName] = useState("");
-  const [editedDesc, setEditedDesc] = useState("");
-  const [editNameError, setEditNameError] = useState("");
-  const [editDescError, setEditDescError] = useState("");
-  const [editLoading, setEditLoading] = useState(false)
-  
-  // verifica que el usuario este loggeado
+  const { isAdmin, token } = useAuth();
   const { requireAuth, redirecting } = useRequireAuth();
+  const forumResource = useApiResource(getForum, forumId, null);
+  const postResource = useApiResource(getPostsByForum, forumId, []);
+  const { data: forum } = forumResource;
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [query, setQuery] = useState("");
+  const [order, setOrder] = useState("recent");
 
-  // trae los datos del foro desde el backend
-  const {
-    data: forum,
-    loading: loadingForum,
-    error: errorForum,
-    refetch: fetchForums,
-  } = useApiResource(getForum, forumId, null);
-
-  // trae los posts del foro desde el backend
-  const {
-    data: posts,
-    loading: loadingPosts,
-    error: errorPosts,
-  } = useApiResource(getPostsByForum, forumId, []);
-
-  // asegura que sea un array
-  const forumPosts = Array.isArray(posts) ? posts : [];
-  // arma la lista de reglas, si no tiene reglas usa reglas por defecto
-  const rules = [
-    "Respeta a los demás usuarios",
-    "No publicar spam",
-    "No contenido ofensivo",
-  ];
-
-  // maneja el "crear publicacion", si esta loggeado lo lleva al form
-  const handleNewPost = () => {
-    requireAuth(() => navigate(`/forums/${forumId}/posts/new`));
+  const saveForum = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setEditError("");
+    try {
+      await updateForum(forumId, draft, token);
+      setDraft(null);
+      await forumResource.refetch();
+    } catch (error) {
+      setEditError(error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // maneja el click sobre un post
-  const handleGoToPost = (postId) => {
-    navigate(`/post/${postId}`);
-  };
-
-  // un booleano que es True si el usuario puede editar el foro
-  const canEditForum = isSysAdmin || isAdmin;
-     // funciones que abren o cierran los editores.
-    const toggleEditForumName = () => {
-      setEditedName(forum?.name || "")
-      setEditForumDesc(false);
-      setEditForumName(!editForumName);}
-
-    const toggleEditForumDesc = () => {
-      setEditedDesc(forum?.desc || "");
-      setEditForumName(false);
-      setEditForumDesc(!editForumDesc);
-    }
-
-  // Envía únicamente los campos que acepta el DTO de foros de .NET.
-  const handleUpdateForum = async () => {
-    
-    if (!canEditForum) {
-      toast.error("No tenés permisos para editar este foro.");
-      return;
-    }
-
-    setEditLoading(true)
-    setEditNameError("")
-    setEditDescError("")
-   try {
-     let newForum = {
-      name: forum?.name,
-      desc: forum?.desc
-    }
-
-    if (editForumName) newForum.name = editedName;
-    if (editForumDesc) newForum.desc = editedDesc;
-    await updateForum(forumId, newForum, token);
-    setEditForumName(false)
-    setEditForumDesc(false)
-    setEditedName("");
-    setEditLoading(false)
-    fetchForums()
-   } catch (error) {
-    toast.error(error.message || error || "Hubo un error")
-   } finally {
-    setEditLoading(false);
-   }
-
-  }
-
-
-  
-  if (redirecting) {
-    return <Redirecting />
-  }
-
-  if (loadingForum || loadingPosts) {
+  if (redirecting) return <Redirecting />;
+  if (forumResource.loading || forumResource.error || !forum) {
     return (
-      <main className="forum-detail-page">
-        <div className="forum-detail-loading">
-          <Spinner animation="border" />
-          <p>Cargando foro...</p>
-        </div>
+      <main className="salvia-container salvia-forum-page">
+        <Link to="/foros">Volver a Foros</Link>
+        {forumResource.loading ? (
+          <p className="salvia-empty" role="status"><Spinner size="sm" /> Cargando foro…</p>
+        ) : (
+          <Alert variant="danger">{forumResource.error || "No se encontró el foro."}</Alert>
+        )}
       </main>
     );
   }
 
-  if (errorForum || errorPosts) {
-    return (
-      <main className="forum-detail-page">
-        <Alert variant="danger">
-          Error al cargar el foro: {errorForum || errorPosts}
-        </Alert>
-      </main>
-    );
-  }
+  const search = normalizeSearch(query);
+  const posts = postResource.data
+    .map((post) => ({ post, ...getPostPreview(post) }))
+    .filter(({ post, heading, excerpt }) => normalizeSearch(
+      `${heading} ${excerpt} ${post.Person?.name || ""}`
+    ).includes(search))
+    .sort((a, b) => {
+      const difference = (Date.parse(b.post.postDate) || 0) - (Date.parse(a.post.postDate) || 0);
+      return order === "recent" ? difference : -difference;
+    });
 
   return (
-    <main className="forum-detail-page">
-      <section className="forum-detail-card">
-        <div className="forum-detail-breadcrumb">
-          <Link to="/foros">Foros</Link>
-          <span>{">"}</span>
-          <span>{forum?.name || "Foro"}</span>
+    <main className="salvia-container salvia-forum-page">
+      <nav className="salvia-breadcrumb" aria-label="Ubicación">
+        <Link to="/foros">Foros</Link><span aria-hidden="true">/</span><span aria-current="page">{forum.name}</span>
+      </nav>
+      <div className="salvia-forum-header">
+        <div>
+          <h1 className="salvia-title">{forum.name}</h1>
+          {!forum.status && <p className="salvia-lede">Foro inactivo</p>}
         </div>
-
-        <div className="forum-detail-header">
-          <div className="forum-detail-header-content">
-            {editForumName ?
-                  <Form>
-                    <h6>Editar el nombre del foro</h6>
-                    <Form.Group>
-                      <Form.Control
-                        type="text"
-                        value={editedName}
-                        onChange={(event) => {
-                          setEditedName(event.target.value);
-                          setEditNameError("");
-                        }}
-                        isInvalid={!!editNameError}/>
-                      </Form.Group>
-                    <Button variant="secondary" disabled={editLoading} onClick={toggleEditForumName}>Cancelar</Button>&emsp;
-                    <Button variant="success" disabled={editLoading} onClick={handleUpdateForum}>Guardar</Button>
-                  </Form> : <h1>{forum?.name || "Foro"} &emsp;<Button
-                    variant="outline-success"
-                    size="sm"
-                    className="edit-button"
-                    hidden={!canEditForum || !!editForumName}
-                    onClick={toggleEditForumName}
-                    >Editar</Button></h1>
-                    }            
-            {editForumDesc ?
-                  <Form>
-                    <h6>Editar la descripción del foro</h6>
-                    <Form.Group>
-                      <Form.Control
-                        as="textarea"
-                        rows={4}
-                        value={editedDesc}
-                        onChange={(event) => {
-                          setEditedDesc(event.target.value);
-                          setEditDescError("");
-                        }}
-                        isInvalid={!!editDescError}/>
-                      </Form.Group>
-                    <Button variant="secondary" disabled={editLoading} onClick={toggleEditForumDesc}>Cancelar</Button>&emsp;
-                    <Button variant="success" disabled={editLoading} onClick={handleUpdateForum}>Guardar</Button>
-                  </Form> : <p> {forum?.desc || "Espacio general para debatir temas de la comunidad."} &emsp;<Button
-                    variant="outline-success"
-                    size="sm" className="edit-button"
-                    hidden={!canEditForum || !!editForumDesc}
-                    onClick={toggleEditForumDesc}
-                    >Editar</Button> </p>}
-
-
-            <div className="forum-detail-meta">
-              <span>{forum?.status ? "Activo" : "Inactivo"}</span>
-              <span>{forumPosts.length} Publicaciones</span>
-            </div>
+        <div className="salvia-toolbar salvia-forum-controls">
+          {isAdmin && !draft && (
+            <button className="btn salvia-secondary" onClick={() => {
+              setEditError("");
+              setDraft({ name: forum.name, desc: forum.desc || "" });
+            }}>Editar foro</button>
+          )}
+          <button className="btn salvia-primary" disabled={!forum.status}
+            onClick={() => requireAuth(() => navigate(`/forums/${forumId}/posts/new`))}>
+            Nueva publicación
+          </button>
+        </div>
+      </div>
+      {draft && (
+        <form className="salvia-panel salvia-forum-editor" onSubmit={saveForum}>
+          <label>Nombre del foro
+            <input className="form-control" value={draft.name} required
+              onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+          </label>
+          <label>Descripción
+            <textarea className="form-control" value={draft.desc} rows={3} required
+              onChange={(event) => setDraft({ ...draft, desc: event.target.value })} />
+          </label>
+          {editError && <Alert variant="danger">{editError}</Alert>}
+          <div className="salvia-editor-actions">
+            <button type="button" className="btn salvia-secondary" disabled={saving} onClick={() => setDraft(null)}>Cancelar</button>
+            <button className="btn salvia-primary" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>
           </div>
-
-          <Button
-            variant="success"
-            className="forum-detail-new-post"
-            onClick={handleNewPost}
-            disabled={!forum?.status}
-          >
-            + Nueva publicación
-          </Button>
-        </div>
-
-        <Row className="forum-detail-body">
-          <Col lg={8}>
-            <section className="forum-detail-posts">
-              <h2>Publicaciones recientes</h2>
-
-              {forumPosts.length === 0 ? (
-                <Card className="forum-detail-empty-card">
-                  <Card.Body>
-                    <Card.Title>No hay publicaciones todavía</Card.Title>
-                    <Card.Text>
-                      Este foro todavía no tiene publicaciones cargadas.
-                    </Card.Text>
-                  </Card.Body>
-                </Card>
-              ) : (
-                <div className="forum-detail-post-list">
-                  {forumPosts.map((post) => (
-                    <article
-                      key={post.id}
-                      className="forum-detail-post-card"
-                      onClick={() => handleGoToPost(post.id)}
-                    >
-                      <div className="forum-detail-post-avatar">
-                        {post.Person?.name?.charAt(0).toUpperCase() || "U"}
+        </form>
+      )}
+      <div className="salvia-forum-columns">
+        <section className="salvia-panel salvia-publications" aria-labelledby="publications-title">
+          <h2 id="publications-title">Publicaciones</h2>
+          <div className="salvia-toolbar salvia-publications-toolbar">
+            <label className="salvia-search">
+              <span className="salvia-search-icon" aria-hidden="true" />
+              <input className="form-control" type="search" aria-label="Buscar publicaciones"
+                placeholder="Buscar publicaciones…" value={query} onChange={(event) => setQuery(event.target.value)} />
+            </label>
+            <select className="form-select" aria-label="Orden de publicaciones" value={order}
+              onChange={(event) => setOrder(event.target.value)}>
+              <option value="recent">Más recientes</option>
+              <option value="oldest">Más antiguas</option>
+            </select>
+          </div>
+          {postResource.loading ? (
+            <p className="salvia-empty" role="status"><Spinner size="sm" /> Cargando publicaciones…</p>
+          ) : postResource.error ? (
+            <Alert variant="danger">
+              {postResource.error} <button className="btn salvia-secondary" onClick={postResource.refetch}>Reintentar</button>
+            </Alert>
+          ) : posts.length === 0 ? (
+            <div className="salvia-empty">
+              <p>{search ? "No hay publicaciones que coincidan con tu búsqueda." : "Todavía no hay publicaciones."}</p>
+              {search && <button className="btn salvia-secondary" onClick={() => setQuery("")}>Limpiar búsqueda</button>}
+            </div>
+          ) : (
+            <ul className="salvia-publication-list">
+              {posts.map(({ post, heading, excerpt }) => {
+                const author = post.Person?.name || "Usuario";
+                return (
+                  <li key={post.id}>
+                    <Link to={`/post/${post.id}`}>
+                      <h3>{heading}</h3>
+                      {excerpt && <p>{excerpt}</p>}
+                      <div className="salvia-byline">
+                        <span className="salvia-avatar" aria-hidden="true">{getInitial(author)}</span>
+                        {author}<span aria-hidden="true">·</span>{formatDate(post.postDate)}
                       </div>
-
-                      <div className="forum-detail-post-content">
-                        <h3>{post.title || "Publicación"}</h3>
-
-                        <p>{post.body}</p>
-
-                        <div className="forum-detail-post-footer">
-                          <span>
-                            {post.Person?.name || "Usuario"} · {formatDate(post.postDate)}
-                          </span>
-
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </Col>
-
-          <Col lg={4}>
-            <aside className="forum-detail-sidebar">
-              <Card className="forum-detail-side-card">
-                <Card.Body>
-                  <Card.Title>Sobre este foro</Card.Title>
-                  <div><h6>Reglas generales</h6>
-                  <ul className="forum-detail-rules">
-                    {rules.map((rule, index) => (
-                      <li key={index}>{rule}.</li>
-                    ))}
-                  </ul></div>
-                </Card.Body>
-                
-              </Card>
-
-              <Card className="forum-detail-side-card">
-                <Card.Body>
-                  <Card.Title>Estadísticas</Card.Title>
-
-                  <div className="forum-detail-stat">
-                    <span>Publicaciones:</span>
-                    <strong>{forumPosts.length}</strong>
-                  </div>
-
-
-                  <div className="forum-detail-stat">
-                    <span>Estado:</span>
-                    <strong>Activo</strong>
-                  </div>
-                </Card.Body>
-              </Card>
-            </aside>
-          </Col>
-        </Row>
-      </section>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+        <aside className="salvia-forum-sidebar" aria-label="Información del foro">
+          {forum.desc && <section className="salvia-panel"><h2>Acerca del foro</h2><p>{forum.desc}</p></section>}
+          <section className="salvia-panel">
+            <h2>Reglas</h2>
+            <ul>
+              <li>Respetá a los demás usuarios.</li>
+              <li>Evitá el spam.</li>
+              <li>Evitá el contenido ofensivo.</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
     </main>
   );
-};
+}
 
-export default ForumPage;
+export default function ForumPage() {
+  const { forumId } = useParams();
+  return <ForumDetail key={forumId} forumId={forumId} />;
+}

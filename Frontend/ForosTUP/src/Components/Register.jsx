@@ -1,178 +1,64 @@
-import "./LogIn.css";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createUser } from "../Services/userService.js";
 
-const Register = () => {
+const fields = [
+  { name: "name", label: "Nombre", type: "text", autoComplete: "name" },
+  { name: "email", label: "Correo electrónico", type: "email", autoComplete: "email" },
+  { name: "dateOfBirth", label: "Fecha de nacimiento", type: "date", autoComplete: "bday" },
+  { name: "password", label: "Contraseña", type: "password", autoComplete: "new-password" },
+  { name: "confirmPassword", label: "Confirmar contraseña", type: "password", autoComplete: "new-password" },
+];
+
+export default function Register() {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    dateOfBirth: "",
-    password: "",
-    confirmPassword: "",
-  });
-
+  const { state } = useLocation();
+  const [form, setForm] = useState({ name: "", email: "", dateOfBirth: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
-    setSuccess("");
-    setLoading(true);
-
     if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      setLoading(false);
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
+    setLoading(true);
     try {
       await createUser(form);
-
-      setSuccess("Usuario registrado correctamente");
-
-      setTimeout(() => {
-        navigate("/foros");
-      }, 1500);
-
+      navigate("/login", { replace: true, state: { email: form.email.trim(), from: state?.from, registered: true } });
     } catch (error) {
       setError(error.message);
     } finally {
-    setLoading(false);
-  }
+      setLoading(false);
+    }
   };
 
   return (
-    <main className="login-page login-page-light">
-      <Container>
-        <Row className="justify-content-center">
-          <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-            <Card className="login-card">
-              <Card.Body className="login-card-body">
-                <div className="login-header">
-                  <div className="login-badge">Foro TUP</div>
-
-                  <h2 className="login-title">Crear cuenta</h2>
-
-                  <p className="login-subtitle">
-                    Unite al Gran Foro TUP y empezá a participar
-                  </p>
-                </div>
-
-                {error && (
-                  <Alert variant="danger" className="login-alert">
-                    {error}
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert variant="success" className="login-alert">
-                    {success}
-                  </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">Nombre</Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="text"
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      placeholder="Ingresá tu nombre"
-                      autoComplete="name"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">Correo electrónico</Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="email"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="ejemplo@mail.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">Fecha de nacimiento</Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="date"
-                      name="dateOfBirth"
-                      value={form.dateOfBirth}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">Contraseña</Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="password"
-                      name="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      placeholder="Creá una contraseña"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-4">
-                    <Form.Label className="login-label">Confirmar contraseña</Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="password"
-                      name="confirmPassword"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Repetí tu contraseña"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Button
-                    type="submit"
-                    className="login-button"
-                    disabled={loading}
-                  >
-                    {loading ? "Registrando..." : "Crear cuenta"}
-                  </Button>
-                </Form>
-
-                <div className="login-footer">
-                  <span>¿Ya tenés cuenta?</span>{" "}
-                  <Link to="/login">Iniciar sesión</Link>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+    <main className="salvia-auth">
+      <section className="salvia-panel salvia-auth-card salvia-register-card" aria-labelledby="register-title">
+        <h1 id="register-title">Crear cuenta</h1>
+        {error && <Alert variant="danger">{error}</Alert>}
+        <form className="salvia-form" onSubmit={handleSubmit}>
+          <div className="salvia-register-fields">
+            {fields.map(({ name, label, type, autoComplete }) => (
+              <div key={name} className={name === "dateOfBirth" ? "salvia-full-field" : undefined}>
+                <label htmlFor={`register-${name}`}>{label}</label>
+                <input id={`register-${name}`} name={name} className="form-control" type={type}
+                  autoComplete={autoComplete} value={form[name]} required
+                  onChange={(event) => setForm({ ...form, [name]: event.target.value })} />
+              </div>
+            ))}
+          </div>
+          <button className="btn salvia-primary salvia-auth-submit" disabled={loading}>
+            {loading ? "Registrando…" : "Registrarme"}
+          </button>
+        </form>
+        <p className="salvia-auth-footer">¿Ya tenés cuenta? <Link to="/login" state={{ from: state?.from }}>Iniciar sesión</Link></p>
+      </section>
     </main>
   );
-};
-
-export default Register;
+}

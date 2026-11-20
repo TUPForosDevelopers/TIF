@@ -51,3 +51,22 @@ export const getNestedCommentCount = (comment) => {
     0
   );
 };
+export const normalizeSearch = (value) => value.trim().toLowerCase()
+  .normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+export function getPostPreview(post) {
+  if (post.hidden) return { heading: "Publicación oculta", excerpt: "" };
+
+  const template = document.createElement("template");
+  template.innerHTML = (post.body || "")
+    .replace(/<(?:br\s*\/?|\/p|\/div)>/gi, "\n")
+    .replace(/!?\[([^\]]*)\]\([^)]+\)/g, "$1");
+  const lines = (template.content.textContent || "").split(/\r?\n/)
+    .map((line) => line.trim()).filter(Boolean);
+  const [first = "", ...rest] = lines;
+  const heading = first.length > 85 ? `${first.slice(0, 82).trimEnd()}…` : first;
+  return {
+    heading: post.title?.trim() || heading || "Publicación",
+    excerpt: (post.title || first.length > 85 ? lines : rest).join(" "),
+  };
+}
