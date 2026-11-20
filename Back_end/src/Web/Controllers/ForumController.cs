@@ -1,0 +1,93 @@
+using Microsoft.AspNetCore.Mvc;
+using MyApp.Application.Models;
+using MyApp.Application.Services;
+using Microsoft.AspNetCore.Authorization;
+
+namespace MyApp.Web.Controllers;
+
+// maneja las solicitudes http relacionadas con los foros
+[ApiController]
+[Route("[controller]")]
+public class ForumController : ControllerBase
+{
+    // servicio para manejar los casos de uso de foros
+    private readonly ForumServices _services;
+
+    // recibe el servicio mediante inyeccion de dependencias
+    public ForumController(ForumServices services)
+    {
+        _services = services;
+    }
+
+    // obtiene todos los foros
+    [HttpGet]
+    public async Task<ActionResult<List<ForumDTO>>> Get(
+        CancellationToken ct)
+    {
+        var forums = await _services.Get(ct);
+
+        return Ok(forums);
+    }
+
+    // obtiene un foro por su id
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ForumDTO>> GetById(
+        [FromRoute] Guid id,
+        CancellationToken ct)
+    {
+        var forum = await _services.GetById(id, ct);
+        return Ok(forum);
+    }
+
+    // crea un nuevo foro
+    [Authorize(Roles = "Admin,SysAdmin")]
+    [HttpPost]
+    public async Task<ActionResult<ForumDTO>> Create(
+        [FromBody] CreateForumDTO dto,
+        CancellationToken ct)
+    {
+        var forum = await _services.Create(dto, ct);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = forum.Id },
+            forum
+        );
+    }
+
+    // modifica un foro 
+    [Authorize(Roles = "Admin,SysAdmin")]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<ForumDTO>> Update(
+        [FromRoute] Guid id,
+        [FromBody] UpdateForumDTO dto,
+        CancellationToken ct)
+    {
+        var forum = await _services.Update(id, dto, ct);
+        return Ok(forum);
+    }
+
+    [Authorize(Roles = "Admin,SysAdmin")]
+    [HttpPatch("{id:guid}/state")]
+    public async Task<IActionResult> ChangeState(
+        [FromRoute] Guid id,
+        [FromBody] bool state,
+        CancellationToken ct)
+    {
+        await _services.ChangeState(id, state, ct);
+
+        return NoContent();
+    }
+
+    // elimina un foro
+    [Authorize(Roles = "SysAdmin")]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        CancellationToken ct)
+    {
+        await _services.Delete(id, ct);
+
+        return NoContent();
+    }
+}

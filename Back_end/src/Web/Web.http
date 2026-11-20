@@ -1,0 +1,5 @@
+@URL = http://localhost:5073
+
+Accept: application/json
+
+POST {{URL}}/User/

@@ -1,0 +1,100 @@
+using MyApp.Application.Interfaces;
+using MyApp.Application.Models;
+using MyApp.Domain.Entities;
+using MyApp.Domain.ValueObjects;
+using MyApp.Domain.Exceptions;
+
+namespace MyApp.Application.Services;
+
+// implementa los casos de uso relacionados con los foros
+public sealed class ForumServices
+{
+    // repositorio para acceder a los datos de los foros
+    private readonly IForumRepository _repository;
+
+    // recibe el repositorio por inyeccion de dependencias
+    public ForumServices(IForumRepository repository)
+    {
+        _repository = repository;
+    }
+
+    // obtiene todos los foros
+    public async Task<List<ForumDTO>> Get(CancellationToken ct)
+    {
+        var forums = await _repository.Get(ct);
+
+        return ForumDTO.CreateList(forums);
+    }
+
+    // obtiene un foro por su id
+    public async Task<ForumDTO> GetById(Guid id, CancellationToken ct)
+    {
+        var forum = await _repository.GetById((ForumId)id, ct);
+
+        if (forum is null)
+            throw new NotFoundException("Requested forum not found");
+
+        return ForumDTO.Create(forum);
+    }
+
+    // crea un nuevo foro
+    public async Task<ForumDTO> Create(
+        CreateForumDTO dto,
+        CancellationToken ct)
+    {
+        var forum = new Forum(
+            dto.Title,
+            dto.Description
+        );
+
+        var addedForum = await _repository.Add(forum, ct);
+
+        return ForumDTO.Create(addedForum);
+    }
+
+    // modifica un foro
+    public async Task<ForumDTO> Update(
+        Guid id,
+        UpdateForumDTO dto,
+        CancellationToken ct)
+    {
+        var forum = await _repository.GetById((ForumId)id, ct);
+        if (forum is null)
+            throw new NotFoundException("Requested forum not found");
+
+        forum.Update(
+            dto.Title,
+            dto.Description
+        );
+
+        await _repository.Update(forum, ct);
+
+        return ForumDTO.Create(forum);
+    }
+
+    public async Task ChangeState(Guid id, bool state, CancellationToken ct)
+    {
+        var forum = await _repository.GetById((ForumId)id, ct);
+        if (forum is null)
+            throw new NotFoundException("Requested forum not found");
+        if (state)
+            forum.Activate();
+        else
+            forum.Deactivate();
+
+        await _repository.Update(forum, ct);
+    }
+
+    // elimina un foro por su id
+    public async Task Delete(
+        Guid id,
+        CancellationToken ct)
+    {
+        var forum = await _repository.GetById((ForumId)id, ct);
+        if (forum is null)
+            throw new NotFoundException("Requested forum not found");
+
+        await _repository.Delete(forum, ct);
+
+    }
+}
