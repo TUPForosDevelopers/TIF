@@ -86,6 +86,11 @@
 .post-comments-empty p { color: var(--salvia-muted); margin: 0; }
 .thread-comment-body { min-width: 0; flex: 1; }
 .thread-comment-text { margin: .3rem 0 .5rem; line-height: 1.55; }
+.thread-comment-status {
+  color: var(--salvia-muted);
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+}
 .thread-comment-actions, .thread-reply-actions {
   display: flex;
   align-items: center;

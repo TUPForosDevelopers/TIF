@@ -40,9 +40,12 @@ const Comment = ({
     startReply,
     cancelReply,
     submitReply,
+    moderatingId,
+    moderationError,
+    toggleSuppression,
   } = commentsState;
 
-  const { isBannedUser, canBanUser, canMakeAdmin, canEditComment, canDeleteComments } = permissions;
+  const { isBannedUser, canBanUser, canMakeAdmin, canEditComment, canDeleteComments, canSuppressComment } = permissions;
 
   const author = comment.Person?.name || "Usuario";
   const role = comment.Person?.role;
@@ -52,6 +55,9 @@ const Comment = ({
   const canReply = !readOnly && !comment.isDeleted && !comment.hidden;
   const canEdit = !readOnly && canEditComment(comment) && !isEditing;
   const canDelete = canDeleteComments(comment);
+  const canSuppress = canSuppressComment(comment);
+  const statusText = comment.isDeleted ? "Comentario eliminado." :
+    comment.suppressed ? "Comentario suprimido por moderación." : comment.hidden ? "Comentario oculto." : "";
   const canBan = canBanUser(comment.Person);
   const canPromote = canMakeAdmin(comment.Person);
 
@@ -87,12 +93,17 @@ const Comment = ({
             <span className="thread-comment-date">
               {formatDate(comment.postDate || comment.createdAt)}
             </span>
-            {(canEdit || canDelete || canBan || canPromote) && (
+            {(canEdit || canDelete || canSuppress || canBan || canPromote) && (
               <Dropdown align="end" className="post-action-menu">
                 <Dropdown.Toggle variant="outline-secondary" size="sm" aria-label={`Acciones del comentario de ${author}`}>⋯</Dropdown.Toggle>
                 <Dropdown.Menu>
                   {canEdit && <Dropdown.Item onClick={() => requireAuth(() => startEdit(comment))}>Editar comentario</Dropdown.Item>}
                   {canDelete && <Dropdown.Item onClick={() => onDeleteClick(comment)}>Borrar comentario</Dropdown.Item>}
+                  {canSuppress && (
+                    <Dropdown.Item disabled={Boolean(moderatingId)} onClick={() => requireAuth(() => toggleSuppression(comment))}>
+                      {comment.suppressed ? "Restaurar comentario" : "Suprimir comentario"}
+                    </Dropdown.Item>
+                  )}
                   {canBan && <Dropdown.Item onClick={() => goToBanForm(comment.Person)}>Banear</Dropdown.Item>}
                   {canPromote && <Dropdown.Item onClick={() => onMakeAdminClick(comment.Person)}>Hacer admin</Dropdown.Item>}
                 </Dropdown.Menu>
@@ -100,7 +111,8 @@ const Comment = ({
             )}
           </div>
 
-          {isEditing ? (
+          {moderationError?.id === comment.id && <ValidationMessage notice>{moderationError.message}</ValidationMessage>}
+          {isEditing && canEditComment(comment) && !readOnly ? (
             <Form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -129,6 +141,8 @@ const Comment = ({
                 </button>
               </div>
             </Form>
+          ) : statusText ? (
+            <p className="thread-comment-text thread-comment-status">{statusText}</p>
           ) : (
             <p
               className="thread-comment-text"

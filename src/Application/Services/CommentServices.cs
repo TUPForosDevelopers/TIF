@@ -4,6 +4,7 @@ using MyApp.Application.Abstractions;
 using MyApp.Application.Models;
 using MyApp.Application.Interfaces;
 using MyApp.Domain.Exceptions;
+using MyApp.Domain.Enums;
 
 namespace MyApp.Application.Services;
 
@@ -169,8 +170,12 @@ public sealed class CommentServices
         var entity = await _repository.GetById((CommentId)id, ct);
         if (entity is null) throw new NotFoundException("Requested comment not found");
         if (entity.Poster != (UserId)userId)
-            throw new UnauthorizedAccessException(
-            "You can only delete your own comments.");
+        {
+            var actor = await _userRepository.GetById((UserId)userId, ct);
+            if (actor is not { IsActive: true, Role: UserRole.Admin or UserRole.SysAdmin })
+                throw new UnauthorizedAccessException("You can only delete your own comments.");
+        }
+
         entity.MarkAsDeleted();
         await _repository.Update(entity, ct);
     }

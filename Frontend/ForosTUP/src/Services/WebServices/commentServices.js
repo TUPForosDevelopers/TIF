@@ -10,9 +10,10 @@ export const fetchComments = async (postId) => {
     userId: comment.poster,
     postDate: comment.date,
     parentCommentId: comment.repliedComment,
-    text: comment.isDeleted ? "Comentario eliminado." : comment.body,
+    text: comment.body,
     isDeleted: comment.isDeleted,
     hidden: comment.invisible,
+    suppressed: comment.suppressedByAdmin,
     Person: authors.get(comment.poster),
   }));
 };
@@ -29,3 +30,6 @@ export const updateComment = (id, text, token) =>
 
 export const deleteComment = (id, token) =>
   httpRequest(`/Comment/${id}`, { method: "DELETE", token });
+
+export const setCommentSuppressed = (id, suppressed, token) =>
+  httpRequest(`/Comment/${id}/suppress`, { method: "PATCH", body: suppressed, token });

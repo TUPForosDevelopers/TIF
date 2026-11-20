@@ -12,7 +12,8 @@ public record CommentDTO(
     bool Invisible,
     bool IsDeleted,
     string Body,
-    Guid? RepliedComment = null
+    Guid? RepliedComment = null,
+    bool SuppressedByAdmin = false
 )
 {
     public static CommentDTO Create(Comment comment)
@@ -30,7 +31,8 @@ public record CommentDTO(
             comment.Invisible,
             comment.IsDeleted,
             body,
-            comment.RepliedComment
+            comment.RepliedComment,
+            comment.SuppressedByAdmin
         );
     }
 }

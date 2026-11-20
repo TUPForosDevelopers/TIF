@@ -32,7 +32,9 @@ export const createPermissions = ({ user, isAdmin, isSysAdmin }) => {
   };
 
   const canDeleteComments = (comment) =>
-    !comment.isDeleted && comment.userId === user?.id;
+    !comment.isDeleted && (isAdmin || isSysAdmin || comment.userId === user?.id);
+
+  const canSuppressComment = (comment) => !comment.isDeleted && (isAdmin || isSysAdmin);
 
   return {
     isBannedUser,
@@ -42,5 +44,6 @@ export const createPermissions = ({ user, isAdmin, isSysAdmin }) => {
     canDeletePost,
     canEditComment,
     canDeleteComments,
+    canSuppressComment,
   };
 };

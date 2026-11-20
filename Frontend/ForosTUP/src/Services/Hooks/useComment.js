@@ -7,6 +7,7 @@ import {
   createComment,
   updateComment,
   deleteComment,
+  setCommentSuppressed,
 } from "../WebServices/commentServices";
 
 export const useComments = (postId, token) => {
@@ -30,6 +31,8 @@ export const useComments = (postId, token) => {
 
   const [commentToDelete, setCommentToDelete] = useState(null);
   const [deletingComment, setDeletingComment] = useState(false);
+  const [moderatingId, setModeratingId] = useState(null);
+  const [moderationError, setModerationError] = useState(null);
   const [deleteError, setDeleteError] = useState("");
 
   const createValidation = useFieldValidation({
@@ -172,8 +175,35 @@ export const useComments = (postId, token) => {
     }
   };
 
+  const toggleSuppression = async (comment) => {
+    if (moderatingId) return;
+    const suppress = !comment.suppressed;
+    setModeratingId(comment.id);
+    setModerationError(null);
+
+    try {
+      await setCommentSuppressed(comment.id, suppress, token);
+      if (suppress) {
+        setEditingId((previous) => previous === comment.id ? null : previous);
+        setReplyingId((previous) => previous === comment.id ? null : previous);
+      }
+      showSuccessToast(suppress ? "Comentario suprimido correctamente." : "Comentario restaurado correctamente.");
+      await refresh();
+    } catch (error) {
+      setModerationError({
+        id: comment.id,
+        message: submissionError(error, "No pudimos cambiar la visibilidad del comentario. Volvé a intentar."),
+      });
+    } finally {
+      setModeratingId(null);
+    }
+  };
+
   return {
     comments,
+    moderatingId,
+    moderationError,
+    toggleSuppression,
     loading,
     error,
     refresh,
