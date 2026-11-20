@@ -4,6 +4,7 @@ using MyApp.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
 using MyApp.Web.Middlewares.ErrorHandling;
+using MyApp.Web.Startup;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -93,6 +94,7 @@ app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 // Se agrega Swagger y OpenAPI
 if (app.Environment.IsDevelopment())
 {
+    await SysAdminSeeder.SeedAsync(app, app.Lifetime.ApplicationStopping);
     app.MapOpenApi();
     app.UseSwaggerUI(options =>
 {
