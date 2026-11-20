@@ -1,3 +1,4 @@
+import ValidationMessage from "./ValidationMessage.jsx";
 import ReactionActions from "./ReactionActions.jsx";
 import { Button, Dropdown, Form } from "react-bootstrap";
 import { formatBodyText } from "../Services/imgUtils/imgUtils.js";
@@ -26,6 +27,7 @@ const Comment = ({
     setEditText,
     savingEdit,
     editError,
+    editValidation,
     startEdit,
     cancelEdit,
     saveEdit,
@@ -34,6 +36,7 @@ const Comment = ({
     setReplyText,
     replying,
     replyError,
+    replyValidation,
     startReply,
     cancelReply,
     submitReply,
@@ -106,16 +109,17 @@ const Comment = ({
               className="thread-reply-form"
               noValidate
             >
+              <ValidationMessage notice>{editError}</ValidationMessage>
               <Form.Control
+                {...editValidation.field("body")}
                 as="textarea"
                 rows={2}
                 aria-label="Editar comentario"
                 className="thread-reply-input"
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                isInvalid={!!editError}
               />
-              {editError && <div className="thread-reply-error">{editError}</div>}
+              <ValidationMessage id={`comment-edit-${comment.id}-body-error`}>{editValidation.show("body")}</ValidationMessage>
               <div className="thread-reply-actions">
                 <Button type="submit" className="salvia-primary" disabled={savingEdit}>
                   {savingEdit ? "Guardando..." : "Guardar"}
@@ -150,18 +154,18 @@ const Comment = ({
               className="thread-reply-form"
               noValidate
             >
-              <label className="thread-reply-label" htmlFor={`reply-${comment.id}`}>Respondiendo a {author}</label>
+              <label className="thread-reply-label" htmlFor={`reply-${comment.id}-body`}>Respondiendo a {author}</label>
+              <ValidationMessage notice>{replyError}</ValidationMessage>
               <Form.Control
-                id={`reply-${comment.id}`}
+                {...replyValidation.field("body")}
                 as="textarea"
                 rows={2}
                 className="thread-reply-input"
                 placeholder="Escribí tu respuesta…"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                isInvalid={!!replyError}
               />
-              {replyError && <div className="thread-reply-error">{replyError}</div>}
+              <ValidationMessage id={`reply-${comment.id}-body-error`}>{replyValidation.show("body")}</ValidationMessage>
               <div className="thread-reply-actions">
                 <Button type="submit" className="salvia-primary" disabled={replying}>
                   {replying ? "Respondiendo..." : "Responder"}

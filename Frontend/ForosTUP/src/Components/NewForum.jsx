@@ -1,143 +1,56 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Container, Form, Button, Alert, Card } from "react-bootstrap";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createForum } from "../Services/forumService.js";
-import "./NewForum.css";
+import { submissionError, validateForum } from "../Services/UtilityServices/formValidation.js";
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
+import { useFieldValidation } from "../hooks/useFieldValidation.js";
+import ForumFields from "./ForumFields.jsx";
+import ValidationMessage from "./ValidationMessage.jsx";
 
-const NewForum = () => {
+export default function NewForum() {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    name: "",
-    desc: "",
-  });
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const { isAdmin, token } = useAuth();
-
-  const handleChange = (event) => {
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    });
-  };
+  const [form, setForm] = useState({ name: "", desc: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const validation = useFieldValidation(validateForum(form), "new-forum");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setError("");
-    setSuccess("");
-
-    if (!isAdmin) {
-      setError("No tenés permisos para crear foros.");
-      return;
-    }
-
-    if (!form.name.trim() || !form.desc.trim()) {
-      setError("El nombre y la descripción son obligatorios.");
-      return;
-    }
-
+    if (!isAdmin || !validation.submit(event.currentTarget)) return;
+    setLoading(true);
     try {
-      setLoading(true);
-
       await createForum(form, token);
-
-      setSuccess("Foro creado correctamente.");
-
-      setTimeout(() => {
-        navigate("/foros");
-      }, 1000);
+      showSuccessToast("Foro creado correctamente.");
+      navigate("/foros");
     } catch (error) {
-      setError(error.message);
+      setError(submissionError(error, error.status === 403 ?
+        "No tenés permisos para crear foros." : "No pudimos crear el foro. Volvé a intentar."));
     } finally {
       setLoading(false);
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <main className="new-forum-page">
-        <Container>
-          <Alert variant="danger">
-            No tenés permisos para crear foros.
-          </Alert>
-        </Container>
-      </main>
-    );
-  }
-
   return (
-    <main className="new-forum-page">
-      <Container>
-        <Card className="new-forum-card">
-          <Card.Body>
-            <div className="new-forum-header">
-              <span className="new-forum-badge">Administración</span>
-
-              <h1>Crear nuevo foro</h1>
-
-              <p>
-                Completá los datos principales para crear un nuevo espacio de
-                conversación dentro de la comunidad.
-              </p>
+    <main className="salvia-container salvia-compose">
+      <nav className="salvia-breadcrumb" aria-label="Ubicación">
+        <Link to="/foros">Foros</Link><span aria-hidden="true">/</span><span aria-current="page">Crear foro</span>
+      </nav>
+      <section className="salvia-panel">
+        <h1 className="salvia-title">Crear foro</h1>
+        <ValidationMessage notice>{isAdmin ? error : "No tenés permisos para crear foros."}</ValidationMessage>
+        {isAdmin && (
+          <form className="salvia-form" onSubmit={handleSubmit} noValidate>
+            <ForumFields values={form} validation={validation} onChange={(values) => { setForm(values); setError(""); }} />
+            <div className="salvia-editor-actions">
+              <Link className="btn salvia-secondary" to="/foros">Cancelar</Link>
+              <button className="btn salvia-primary" disabled={loading}>{loading ? "Creando…" : "Crear foro"}</button>
             </div>
-
-            {error && <Alert variant="danger">{error}</Alert>}
-            {success && <Alert variant="success">{success}</Alert>}
-
-            <Form onSubmit={handleSubmit}>
-              <Form.Group className="mb-3">
-                <Form.Label>Nombre del foro</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="name"
-                  placeholder="Ej: Programación, Base de Datos, General..."
-                  value={form.name}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Descripción</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  name="desc"
-                  placeholder="Describí brevemente de qué trata este foro..."
-                  value={form.desc}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-
-              <div className="new-forum-actions">
-                <Button
-                  variant="outline-secondary"
-                  type="button"
-                  onClick={() => navigate("/foros")}
-                >
-                  Cancelar
-                </Button>
-
-                <Button
-                  variant="success"
-                  type="submit"
-                  disabled={loading}
-                  className="new-forum-submit"
-                >
-                  {loading ? "Creando..." : "Crear foro"}
-                </Button>
-              </div>
-            </Form>
-          </Card.Body>
-        </Card>
-      </Container>
+          </form>
+        )}
+      </section>
     </main>
   );
-};
-
-export default NewForum;
+}

@@ -1,3 +1,7 @@
+import ForumFields from "./ForumFields.jsx";
+import ValidationMessage from "./ValidationMessage.jsx";
+import { useFieldValidation } from "../hooks/useFieldValidation.js";
+import { submissionError, validateForum } from "../Services/UtilityServices/formValidation.js";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Alert, Spinner } from "react-bootstrap";
@@ -22,16 +26,19 @@ function ForumDetail({ forumId }) {
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState("recent");
 
+  const validation = useFieldValidation(draft ? validateForum(draft) : {}, "edit-forum");
+
   const saveForum = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setEditError("");
+    if (!validation.submit(event.currentTarget)) return;
+    setSaving(true);
     try {
       await updateForum(forumId, draft, token);
       setDraft(null);
       await forumResource.refetch();
     } catch (error) {
-      setEditError(error.message);
+      setEditError(submissionError(error, error.status === 403 ? "No tenés permisos para editar este foro." : "No pudimos guardar el foro. Volvé a intentar."));
     } finally {
       setSaving(false);
     }
@@ -76,6 +83,7 @@ function ForumDetail({ forumId }) {
           {isAdmin && !draft && (
             <button className="btn salvia-secondary" onClick={() => {
               setEditError("");
+              validation.reset();
               setDraft({ name: forum.name, desc: forum.desc || "" });
             }}>Editar foro</button>
           )}
@@ -86,16 +94,9 @@ function ForumDetail({ forumId }) {
         </div>
       </div>
       {draft && (
-        <form className="salvia-panel salvia-forum-editor" onSubmit={saveForum}>
-          <label>Nombre del foro
-            <input className="form-control" value={draft.name} required
-              onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-          </label>
-          <label>Descripción
-            <textarea className="form-control" value={draft.desc} rows={3} required
-              onChange={(event) => setDraft({ ...draft, desc: event.target.value })} />
-          </label>
-          {editError && <Alert variant="danger">{editError}</Alert>}
+        <form className="salvia-panel salvia-forum-editor salvia-form" onSubmit={saveForum} noValidate>
+          <ValidationMessage notice>{editError}</ValidationMessage>
+          <ForumFields values={draft} validation={validation} onChange={(values) => { setDraft(values); setEditError(""); }} />
           <div className="salvia-editor-actions">
             <button type="button" className="btn salvia-secondary" disabled={saving} onClick={() => setDraft(null)}>Cancelar</button>
             <button className="btn salvia-primary" disabled={saving}>{saving ? "Guardando…" : "Guardar"}</button>

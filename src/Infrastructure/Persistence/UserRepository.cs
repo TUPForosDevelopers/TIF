@@ -1,3 +1,4 @@
+using MyApp.Application.Models;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Application.Interfaces;
 using MyApp.Domain.Entities;
@@ -58,6 +59,30 @@ public sealed class UserRepository : IUserRepository
             return false;
         else return true;
     }
+    public Task<ReactionSummaryDTO> GetPostReactions(PostId postId, UserId? viewer, CancellationToken ct) =>
+        SummarizeReactions(_context.Users.SelectMany(u => u.Reactions!).Where(r => r.Post == postId), viewer, ct);
+
+    public Task<ReactionSummaryDTO> GetCommentReactions(CommentId commentId, UserId? viewer, CancellationToken ct) =>
+        SummarizeReactions(_context.Users.SelectMany(u => u.Reactions!).Where(r => r.Comment == commentId), viewer, ct);
+
+    private static async Task<ReactionSummaryDTO> SummarizeReactions(
+        IQueryable<Reaction> reactions, UserId? viewer, CancellationToken ct)
+    {
+        var counts = await reactions.GroupBy(r => r.Type)
+            .Select(group => new
+            {
+                IsLike = group.Key,
+                Count = group.Count(),
+                Selected = viewer != null && group.Any(r => r.User == viewer.Value)
+            })
+            .ToListAsync(ct);
+
+        return new ReactionSummaryDTO(
+            counts.Find(group => group.IsLike)?.Count ?? 0,
+            counts.Find(group => !group.IsLike)?.Count ?? 0,
+            counts.Find(group => group.Selected)?.IsLike);
+    }
+
     private async Task<int> SaveChanges(CancellationToken cancellationToken)
     {
         return await _context.SaveChangesAsync(cancellationToken);

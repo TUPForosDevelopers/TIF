@@ -128,24 +128,19 @@ public sealed class BanServices
             await _bans.Update(ban, ct);
     }
 
-    private async Task<Ban?> FindActiveBan(Guid userId, CancellationToken ct)
+    internal async Task<Ban?> FindActiveBan(Guid userId, CancellationToken ct)
     {
         List<Ban> candidates = await _bans.GetActiveByUserId((UserId)userId, ct);
 
         foreach (var ban in candidates)
             await RefreshStatus(ban, ct);
 
-        return candidates.FirstOrDefault(b => b.Status == BanStatus.Activo);
+        return candidates.Where(b => b.Status == BanStatus.Activo).MaxBy(b => b.EndDate);
     }
 
     public async Task EnsureNotBanned(Guid userId, CancellationToken ct)
     {
-        List<Ban> candidates = await _bans.GetActiveByUserId((UserId)userId, ct);
-
-        foreach (var ban in candidates)
-            await RefreshStatus(ban, ct);
-
-        Ban? activeBan = candidates.FirstOrDefault(b => b.Status == BanStatus.Activo);
+        var activeBan = await FindActiveBan(userId, ct);
         if (activeBan is not null)
             throw new UnauthorizedAccessException(
                 $"Your account is banned until {activeBan.EndDate:yyyy-MM-dd}.");

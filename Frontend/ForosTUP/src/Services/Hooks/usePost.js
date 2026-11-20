@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useFieldValidation } from "../../hooks/useFieldValidation.js";
+import { submissionError, validateBody } from "../UtilityServices/formValidation.js";
 import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
 import {
   fetchPost,
@@ -21,6 +23,10 @@ export const usePost = (postId, token) => {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  const editValidation = useFieldValidation({
+    body: validateBody(editBody, "Escribí el contenido de la publicación."),
+  }, "post-edit");
+
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
@@ -39,6 +45,7 @@ export const usePost = (postId, token) => {
   }, [refresh]);
 
   const startEdit = () => {
+    editValidation.reset();
     setEditing(true);
     setEditBody(post?.body || "");
     setEditError("");
@@ -52,7 +59,8 @@ export const usePost = (postId, token) => {
 
   const saveEdit = async (event) => {
     event.preventDefault();
-    if (!editBody.trim()) return setEditError("El contenido no puede estar vacío");
+    setEditError("");
+    if (!editValidation.submit(event.currentTarget)) return;
     try {
       setSavingEdit(true);
       setEditError("");
@@ -61,7 +69,7 @@ export const usePost = (postId, token) => {
       setEditing(false);
       await refresh();
     } catch (err) {
-      setEditError(err.message);
+      setEditError(submissionError(err, "No pudimos guardar la publicación. Volvé a intentar."));
     } finally {
       setSavingEdit(false);
     }
@@ -105,6 +113,7 @@ export const usePost = (postId, token) => {
     savingEdit,
     setEditBody,
     setEditError,
+    editValidation,
     startEdit,
     cancelEdit,
     saveEdit,

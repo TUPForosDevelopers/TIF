@@ -1,3 +1,4 @@
+import ValidationMessage from "./ValidationMessage.jsx";
 import ReactionActions from "./ReactionActions.jsx";
 import { Alert, Button, Dropdown, Form, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -24,6 +25,7 @@ const PostBody = ({
     editing,
     editBody,
     editError,
+    editValidation,
     savingEdit,
     setEditBody,
     setEditError,
@@ -116,8 +118,10 @@ const PostBody = ({
 
         {editing ? (
           <Form onSubmit={handleSaveEdit} noValidate>
+            <ValidationMessage notice>{editError}</ValidationMessage>
             <Form.Group className="mb-3">
               <Form.Control
+                {...editValidation.field("body")}
                 as="textarea"
                 rows={4}
                 aria-label="Editar contenido de la publicación"
@@ -126,10 +130,9 @@ const PostBody = ({
                   setEditBody(e.target.value);
                   setEditError("");
                 }}
-                isInvalid={!!editError}
               />
             </Form.Group>
-            {editError && <Alert variant="danger">{editError}</Alert>}
+            <ValidationMessage id="post-edit-body-error">{editValidation.show("body")}</ValidationMessage>
             <div className="thread-reply-actions">
               <Button type="submit" className="salvia-primary" disabled={savingEdit}>
                 {savingEdit ? "Guardando..." : "Guardar"}

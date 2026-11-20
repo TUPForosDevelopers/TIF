@@ -6,3 +6,29 @@
 .toast-progress-custom {
   background-color: #7fd69b !important;
 }
+.Toastify__toast-container--top-center { top: 4.65rem; }
+
+.Toastify__toast.salvia-success-toast {
+  background: #e4ebe0;
+  color: #365345;
+  border: 1px solid #bdcbbc;
+  border-radius: .55rem;
+  box-shadow: 0 .25rem .85rem #26332b24;
+}
+
+.salvia-success-toast .Toastify__close-button { color: #365345; }
+.Toastify__progress-bar.salvia-success-progress { background: #788f77; }
+.success-toast-mark,
+.validation-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: baseline;
+  width: 1.05em;
+  height: 1.05em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  margin-inline-start: .25em;
+  font-weight: 650;
+  line-height: 1;
+}

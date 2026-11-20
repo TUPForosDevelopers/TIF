@@ -107,6 +107,14 @@ public class PostController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{id:guid}/reaction")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<ReactionSummaryDTO>> GetReactions(Guid id, CancellationToken ct)
+    {
+        Guid? viewer = User.Identity?.IsAuthenticated == true ? User.GetAuthenticatedUserId() : null;
+        return Ok(await _reactionServices.GetPostReactions(id, viewer, ct));
+    }
+
     [Authorize]
     [HttpPut("{id:guid}/reaction")]
     public async Task<IActionResult> SetPostReaction(

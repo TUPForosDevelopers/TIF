@@ -1,3 +1,4 @@
+import ValidationMessage from "./ValidationMessage.jsx";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import Comment from "./Comment";
 import { buildCommentTree, getInitial } from "../Services/UtilityServices/postUtils";
@@ -18,6 +19,7 @@ const CommentSection = ({
     setNewCommentText,
     creating,
     createError,
+    createValidation,
     submitComment,
     commentToDelete,
     deletingComment,
@@ -48,22 +50,23 @@ const CommentSection = ({
           event.preventDefault();
           requireAuth(() => submitComment(event));
         }} noValidate>
+          <ValidationMessage notice>{createError}</ValidationMessage>
           <div className="post-comment-input-row">
             <div className="post-comment-user-avatar" aria-hidden="true">{getInitial(user?.name || "U")}</div>
-            <Form.Control
-              type="text"
-              className="post-comment-input"
+            <textarea
+              {...createValidation.field("body")}
+              rows={2}
+              className="form-control post-comment-input"
               placeholder="Escribí un comentario…"
               aria-label="Escribí un comentario"
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
-              isInvalid={!!createError}
             />
             <Button type="submit" className="salvia-primary post-comment-submit" disabled={creating}>
               {creating ? "Comentando…" : "Comentar"}
             </Button>
           </div>
-          {createError && <p role="alert" className="post-comment-error">{createError}</p>}
+          <ValidationMessage id="comment-new-body-error">{createValidation.show("body")}</ValidationMessage>
         </Form>
       </section>}
 

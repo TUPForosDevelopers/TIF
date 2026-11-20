@@ -350,3 +350,45 @@
   .salvia-forum-columns, .salvia-register-fields { grid-template-columns: minmax(0, 1fr); }
   .salvia-forum-header { align-items: start; flex-direction: column; }
 }
+
+.salvia-layout .form-control[aria-invalid="true"] {
+  border-color: #a34a43;
+  background-color: #f6e8e3;
+  background-image: none;
+}
+
+.salvia-layout .form-control[aria-invalid="true"]:focus {
+  outline-color: #a34a43;
+  box-shadow: 0 0 0 .19rem #a34a4328;
+}
+
+.validation-message,
+.validation-notice { color: #8a3c36; }
+.validation-message {
+  margin: .35rem 0 0;
+  font-size: .9rem;
+}
+
+.validation-notice {
+  margin: 0 0 1rem;
+  padding: .65rem .85rem;
+  background: #f6e8e3;
+  border-radius: .45rem;
+}
+
+.validation-details { display: flex; justify-content: space-between; gap: .75rem; align-items: baseline; }
+.validation-counter { margin: .35rem 0 0 auto; color: var(--salvia-muted); font-size: .85rem; white-space: nowrap; }
+.validation-counter[data-over="true"] { color: #8a3c36; }
+.salvia-form-field + .salvia-form-field { margin-top: .85rem; }
+.salvia-compose { padding-block: 1.8rem 4.5rem; }
+.salvia-compose .salvia-panel { padding: 1.4rem; }
+.salvia-compose h1 { margin-bottom: 1rem; }
+.salvia-compose .salvia-editor-actions { margin-top: 1.1rem; }
+.post-thread-page .reaction-button[aria-pressed="true"] {
+  background-color: var(--salvia-tint);
+  border-color: var(--salvia-primary);
+  color: var(--salvia-primary-hover);
+}
+.reaction-count { margin-inline-start: .35em; font-variant-numeric: tabular-nums; }
+.reaction-actions { margin: 0; }
+.reaction-actions .validation-message { flex-basis: 100%; }

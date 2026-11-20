@@ -1,3 +1,4 @@
+using MyApp.Application.Models;
 using MyApp.Domain.Entities;
 using MyApp.Domain.ValueObjects;
 
@@ -12,5 +13,7 @@ public interface IUserRepository
     Task<User> Add(User entity, CancellationToken ct);
     Task Delete(User entity, CancellationToken ct);
     Task Update(User entity, CancellationToken ct);
+    Task<ReactionSummaryDTO> GetPostReactions(PostId postId, UserId? viewer, CancellationToken ct);
+    Task<ReactionSummaryDTO> GetCommentReactions(CommentId commentId, UserId? viewer, CancellationToken ct);
     Task<bool> EmailExists(EmailAddress email);
 }

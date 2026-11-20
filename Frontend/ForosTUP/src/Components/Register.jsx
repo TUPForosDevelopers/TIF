@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Alert } from "react-bootstrap";
+import ValidationMessage from "./ValidationMessage.jsx";
+import { useFieldValidation } from "../hooks/useFieldValidation.js";
+import { submissionError, validateBirthDate, validateEmail } from "../Services/UtilityServices/formValidation.js";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createUser } from "../Services/userService.js";
 
@@ -18,20 +20,32 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [emailError, setEmailError] = useState("");
+  const validation = useFieldValidation({
+    name: form.name.trim() ? "" : "Ingresá tu nombre.",
+    email: validateEmail(form.email) || emailError,
+    dateOfBirth: validateBirthDate(form.dateOfBirth),
+    password: form.password.trim() ? "" : "Ingresá tu contraseña.",
+    confirmPassword: !form.confirmPassword ? "Confirmá tu contraseña." :
+      form.password !== form.confirmPassword ? "Las contraseñas no coinciden." : "",
+  }, "register");
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
-    if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
+    if (!validation.submit(event.currentTarget)) return;
 
     setLoading(true);
     try {
       await createUser(form);
       navigate("/login", { replace: true, state: { email: form.email.trim(), from: state?.from, registered: true } });
     } catch (error) {
-      setError(error.message);
+      if (error.status === 400 && error.message === "Email is already registered.") {
+        setEmailError("Este correo ya está registrado.");
+        document.getElementById("register-email")?.focus();
+      } else {
+        setError(submissionError(error, "No pudimos crear la cuenta. Revisá los datos e intentá de nuevo."));
+      }
     } finally {
       setLoading(false);
     }
@@ -41,15 +55,20 @@ export default function Register() {
     <main className="salvia-auth">
       <section className="salvia-panel salvia-auth-card salvia-register-card" aria-labelledby="register-title">
         <h1 id="register-title">Crear cuenta</h1>
-        {error && <Alert variant="danger">{error}</Alert>}
-        <form className="salvia-form" onSubmit={handleSubmit}>
+        <ValidationMessage notice>{error}</ValidationMessage>
+        <form className="salvia-form" onSubmit={handleSubmit} noValidate>
           <div className="salvia-register-fields">
             {fields.map(({ name, label, type, autoComplete }) => (
               <div key={name} className={name === "dateOfBirth" ? "salvia-full-field" : undefined}>
-                <label htmlFor={`register-${name}`}>{label}</label>
-                <input id={`register-${name}`} name={name} className="form-control" type={type}
+                <label htmlFor={`register-${name}`}>{label} <span aria-hidden="true">*</span></label>
+                <input {...validation.field(name)} name={name} className="form-control" type={type}
                   autoComplete={autoComplete} value={form[name]} required
-                  onChange={(event) => setForm({ ...form, [name]: event.target.value })} />
+                  onChange={(event) => {
+                    setForm({ ...form, [name]: event.target.value });
+                    if (name === "email") setEmailError("");
+                    setError("");
+                  }} />
+                <ValidationMessage id={`register-${name}-error`}>{validation.show(name)}</ValidationMessage>
               </div>
             ))}
           </div>

@@ -1,7 +1,7 @@
 
 using MyApp.Application.Models;
 using MyApp.Application.Services;
-using Microsoft.AspNetCore.Authentication;
+using MyApp.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MyApp.Web.Controllers;
@@ -20,8 +20,22 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<string>> Authenticate(LoginUserDTO loginDTO, CancellationToken ct)
     {
-        string token = await _service.Authenticate(loginDTO, ct);
-        return Ok(token);
+        try
+        {
+            var token = await _service.Authenticate(loginDTO, ct);
+            return Ok(token);
+        }
+        catch (LoginRestrictedException exception)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Access restricted",
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "access_restricted",
+                    ["remainingSeconds"] = exception.RemainingSeconds
+                });
+        }
     }
 
 }

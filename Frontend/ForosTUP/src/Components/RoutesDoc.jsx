@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "react-toastify/dist/ReactToastify.css";
 import "../styles/toast.css";
+import { ToastContainer } from "react-toastify";
 import Layout from "./Layout.jsx";
 import Protected from "./Protected.jsx";
 import PublicOnly from "./PublicOnly.jsx";
@@ -35,22 +36,27 @@ export default function RoutesDoc() {
             <Route path="/login" element={<LogIn />} />
             <Route path="/register" element={<Register />} />
           </Route>
+          <Route element={<Protected />}>
+            <Route path="/forums/:forumId/posts/new" element={<NewPost />} />
+            <Route element={<ProtectedOnlyAdmin />}>
+              <Route path="/newforum" element={<NewForum />} />
+            </Route>
+          </Route>
         </Route>
 
         <Route element={<Layout />}>
           <Route element={<Protected />}>
             <Route path="/user/edit" element={<UserEdit />} />
-            <Route path="/forums/:forumId/posts/new" element={<NewPost />} />
             <Route element={<ProtectedOnlyAdmin />}>
               <Route path="/bans" element={<Bans />} />
               <Route path="/newban" element={<NewBans />} />
-              <Route path="/newforum" element={<NewForum />} />
             </Route>
           </Route>
         </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <ToastContainer position="top-center" autoClose={3000} pauseOnHover theme="colored" />
     </BrowserRouter>
   );
 }

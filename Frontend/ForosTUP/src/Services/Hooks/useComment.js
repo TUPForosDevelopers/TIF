@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useFieldValidation } from "../../hooks/useFieldValidation.js";
+import { submissionError, validateBody } from "../UtilityServices/formValidation.js";
+import { showSuccessToast } from "../UtilityServices/successToast.jsx";
 import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
 import {
   fetchComments,
@@ -31,6 +34,16 @@ export const useComments = (postId, token) => {
   const [deletingComment, setDeletingComment] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const createValidation = useFieldValidation({
+    body: validateBody(newCommentText, "Escribí un comentario antes de enviarlo."),
+  }, "comment-new");
+  const editValidation = useFieldValidation({
+    body: validateBody(editText, "Escribí un comentario antes de guardar."),
+  }, `comment-edit-${editingId}`);
+  const replyValidation = useFieldValidation({
+    body: validateBody(replyText, "Escribí una respuesta antes de enviarla."),
+  }, `reply-${replyingId}`);
+
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
@@ -50,22 +63,25 @@ export const useComments = (postId, token) => {
 
   const submitComment = async (event) => {
     event.preventDefault();
-    if (!newCommentText.trim()) return setCreateError("El comentario no puede estar vacío");
+    setCreateError("");
+    if (!createValidation.submit(event.currentTarget)) return;
     try {
       setCreating(true);
       setCreateError("");
       await createComment(postId, { text: newCommentText.trim() }, token);
-      toast.success("Comentario publicado", TOAST_SUCCESS);
+      showSuccessToast("Comentario publicado correctamente.");
+      createValidation.reset();
       setNewCommentText("");
       await refresh();
     } catch (err) {
-      setCreateError(err.message);
+      setCreateError(submissionError(err, "No pudimos publicar el comentario. Volvé a intentar."));
     } finally {
       setCreating(false);
     }
   };
 
   const startEdit = (comment) => {
+    editValidation.reset();
     setEditingId(comment.id);
     setEditText(comment.text);
     setEditError("");
@@ -80,7 +96,8 @@ export const useComments = (postId, token) => {
 
   const saveEdit = async (event) => {
     event.preventDefault();
-    if (!editText.trim()) return setEditError("El comentario no puede estar vacío");
+    setEditError("");
+    if (!editValidation.submit(event.currentTarget)) return;
     try {
       setSavingEdit(true);
       setEditError("");
@@ -89,13 +106,14 @@ export const useComments = (postId, token) => {
       setEditingId(null);
       await refresh();
     } catch (err) {
-      setEditError(err.message);
+      setEditError(submissionError(err, "No pudimos guardar el comentario. Volvé a intentar."));
     } finally {
       setSavingEdit(false);
     }
   };
 
   const startReply = (comment) => {
+    replyValidation.reset();
     setReplyingId(comment.id);
     setReplyText("");
     setReplyError("");
@@ -110,17 +128,18 @@ export const useComments = (postId, token) => {
 
   const submitReply = async (event, parentCommentId) => {
     event.preventDefault();
-    if (!replyText.trim()) return setReplyError("La respuesta no puede estar vacía");
+    setReplyError("");
+    if (!replyValidation.submit(event.currentTarget)) return;
     try {
       setReplying(true);
       setReplyError("");
       await createComment(postId, { text: replyText.trim(), parentCommentId }, token);
-      toast.success("Respuesta añadida", TOAST_SUCCESS);
+      showSuccessToast("Respuesta publicada correctamente.");
       setReplyText("");
       setReplyingId(null);
       await refresh();
     } catch (err) {
-      setReplyError(err.message);
+      setReplyError(submissionError(err, "No pudimos publicar la respuesta. Volvé a intentar."));
     } finally {
       setReplying(false);
     }
@@ -161,13 +180,15 @@ export const useComments = (postId, token) => {
     error,
     refresh,
     newCommentText,
-    setNewCommentText,
+    setNewCommentText(value) { setNewCommentText(value); setCreateError(""); },
+    createValidation,
     creating,
     createError,
     submitComment,
     editingId,
     editText,
-    setEditText,
+    setEditText(value) { setEditText(value); setEditError(""); },
+    editValidation,
     savingEdit,
     editError,
     startEdit,
@@ -175,7 +196,8 @@ export const useComments = (postId, token) => {
     saveEdit,
     replyingId,
     replyText,
-    setReplyText,
+    setReplyText(value) { setReplyText(value); setReplyError(""); },
+    replyValidation,
     replying,
     replyError,
     startReply,

@@ -44,7 +44,9 @@ public class AuthServices
         if (!flag)
             throw new AuthenticationFailedException("Invalid credentials");
         // Verifica que el usuario no tenga un baneo vigente.
-        await EnsureNotBannedForAuth(user.Id.Value, ct);
+        var activeBan = await _bans.FindActiveBan(user.Id.Value, ct);
+        if (activeBan is not null)
+            throw new LoginRestrictedException(activeBan.EndDate - DateTime.Now);
 
         return _jwt.GenerateToken(user.Id, user.Role);
     }

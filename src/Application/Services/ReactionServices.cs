@@ -1,3 +1,4 @@
+using MyApp.Application.Models;
 
 using MyApp.Domain.ValueObjects;
 using MyApp.Domain.Entities;
@@ -89,6 +90,20 @@ public sealed class ReactionServices
         return post;
     }
 
+    public async Task<ReactionSummaryDTO> GetPostReactions(Guid id, Guid? viewer, CancellationToken ct)
+    {
+        await GetAvailablePost((PostId)id, ct);
+        return await _userRepository.GetPostReactions((PostId)id, ToUserId(viewer), ct);
+    }
+
+    public async Task<ReactionSummaryDTO> GetCommentReactions(Guid id, Guid? viewer, CancellationToken ct)
+    {
+        var comment = await GetAvailableComment(id, ct);
+        return await _userRepository.GetCommentReactions(comment.Id, ToUserId(viewer), ct);
+    }
+
+    private static UserId? ToUserId(Guid? viewer) => viewer is Guid id ? (UserId)id : null;
+
     // agregar o cambiar reaccion a una publicacion
     
     public async Task SetPostReaction(
@@ -138,6 +153,13 @@ public sealed class ReactionServices
     {
         var user = await GetAuthorizedUser(userId, ct);
 
+        await GetAvailableComment(commentId, ct);
+        user.SetCommentReaction((CommentId)commentId, isLike);
+        await _userRepository.Update(user, ct);
+    }
+
+    private async Task<Comment> GetAvailableComment(Guid commentId, CancellationToken ct)
+    {
         if (commentId == Guid.Empty)
             throw new DomainException("Comment ID is required.");
 
@@ -162,12 +184,7 @@ public sealed class ReactionServices
         // verifica la publicacion y el foro del comentario
         await GetAvailablePost(comment.ParentPost, ct);
 
-        // agrega o reemplaza la reaccion
-        user.SetCommentReaction(
-            (CommentId)commentId, isLike);
-
-        // guarda los cambios
-        await _userRepository.Update(user, ct);
+        return comment;
     }
 
     // eliminar reaccion de un comentario
