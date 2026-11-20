@@ -3,7 +3,9 @@ import ValidationMessage from "./ValidationMessage.jsx";
 import { useFieldValidation } from "../hooks/useFieldValidation.js";
 import { submissionError, validateBirthDate, validateEmail } from "../Services/UtilityServices/formValidation.js";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { createUser } from "../Services/userService.js";
+import { authenticate, createUser, getCurrentUser } from "../Services/userService.js";
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const fields = [
   { name: "name", label: "Nombre", type: "text", autoComplete: "name" },
@@ -16,6 +18,7 @@ const fields = [
 export default function Register() {
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { login } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", dateOfBirth: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,15 +34,23 @@ export default function Register() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (loading) return;
     setError("");
     if (!validation.submit(event.currentTarget)) return;
 
     setLoading(true);
+    let accountCreated = false;
     try {
       await createUser(form);
-      navigate("/login", { replace: true, state: { email: form.email.trim(), from: state?.from, registered: true } });
+      accountCreated = true;
+      const token = await authenticate(form.email, form.password);
+      login(await getCurrentUser(token), token);
+      showSuccessToast("Cuenta creada correctamente.");
+      navigate("/main", { replace: true });
     } catch (error) {
-      if (error.status === 400 && error.message === "Email is already registered.") {
+      if (accountCreated) {
+        navigate("/login", { replace: true, state: { email: form.email.trim(), registered: true } });
+      } else if (error.status === 400 && error.message === "Email is already registered.") {
         validation.report("email", "Este correo ya está registrado.");
         document.getElementById("register-email")?.focus();
       } else {
