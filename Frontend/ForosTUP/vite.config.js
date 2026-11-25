@@ -5,7 +5,7 @@ export default defineConfig(({ mode }) => {
   const { API_PROXY_TARGET } = loadEnv(mode, process.cwd(), '');
   const proxy = {
     '/api': {
-      target: API_PROXY_TARGET || 'http://127.0.0.1:5073',
+      target: API_PROXY_TARGET || 'http://localhost:5073',
       changeOrigin: true,
       rewrite: (path) => /^\/api\/auth(?:\/|\?|$)/i.test(path)
         ? path

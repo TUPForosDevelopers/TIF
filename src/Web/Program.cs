@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
 using MyApp.Web.Middlewares.ErrorHandling;
 using MyApp.Web.Startup;
+using Microsoft.EntityFrameworkCore;
+using MyApp.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +89,17 @@ builder.Services.AddTransient<GlobalExceptionHandlingMiddleware>();
 // Se genera la API
 var app = builder.Build();
 
+// Aplica las migraciones pendientes si la configuración lo habilita.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+
+    var db = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+
+    await db.Database.MigrateAsync();
+}
+
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
@@ -101,13 +114,6 @@ if (app.Environment.IsDevelopment())
     options.SwaggerEndpoint("/openapi/v1.json", "My API V1");
 });
 }
-
-// Esto es para hacer migración automática al levantar el proyecto.
-/*using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
-}*/
 
 
 app.UseHttpsRedirection();

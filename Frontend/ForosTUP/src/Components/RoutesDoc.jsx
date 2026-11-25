@@ -46,7 +46,8 @@ export default function RoutesDoc() {
 
         <Route element={<Layout />}>
           <Route element={<Protected />}>
-            <Route path="/user/edit" element={<UserEdit />} />
+              <Route path="/user/profile" element={<UserEdit />} />
+              <Route path="/user/edit" element={<UserEdit />} />
             <Route element={<ProtectedOnlyAdmin />}>
               <Route path="/bans" element={<Bans />} />
               <Route path="/newban" element={<NewBans />} />
