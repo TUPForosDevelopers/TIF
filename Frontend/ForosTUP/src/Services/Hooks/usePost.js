@@ -1,23 +1,19 @@
+import { showSuccessToast } from "../UtilityServices/successToast.jsx";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import { TOAST_SUCCESS } from "../UtilityServices/postUtils";
+import { useFieldValidation } from "../../hooks/useFieldValidation.js";
+import { submissionError, validateBody } from "../UtilityServices/formValidation.js";
 import {
   fetchPost,
-  fetchMyLike,
-  likePost,
   updatePost,
   deletePost,
 } from "../WebServices/postServices";
 
 export const usePost = (postId, token) => {
   const [post, setPost] = useState(null);
-  const [likedByMe, setLikedByMe] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [likeLoading, setLikeLoading] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const [editError, setEditError] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -26,80 +22,53 @@ export const usePost = (postId, token) => {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  const editValidation = useFieldValidation({
+    body: validateBody(editBody, "Escribí el contenido de la publicación."),
+  }, "post-edit");
+
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
       const data = await fetchPost(postId);
       setPost(data);
-      if (token) {
-        const likeData = await fetchMyLike(postId, token);
-        setLikedByMe(!!likeData?.likedByMe);
-      } else {
-        setLikedByMe(false);
-      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [postId, token]);
+  }, [postId]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  const toggleLike = async () => {
-    if (likeLoading) return;
-    try {
-      setLikeLoading(true);
-      const data = await likePost(postId, token);
-      const next = !!data?.likedByMe;
-      setLikedByMe(next);
-      setPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              likeCount:
-                data?.likeCount ??
-                Math.max((prev.likeCount || 0) + (next ? 1 : -1), 0),
-            }
-          : prev
-      );
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLikeLoading(false);
-    }
-  };
-
   const startEdit = () => {
+    editValidation.reset();
     setEditing(true);
-    setEditTitle(post?.title || "");
     setEditBody(post?.body || "");
     setEditError("");
   };
 
   const cancelEdit = () => {
     setEditing(false);
-    setEditTitle("");
     setEditBody("");
     setEditError("");
   };
 
   const saveEdit = async (event) => {
     event.preventDefault();
-    if (!editTitle.trim()) return setEditError("El título no puede estar vacío");
-    if (!editBody.trim()) return setEditError("El contenido no puede estar vacío");
+    setEditError("");
+    if (!editValidation.submit(event.currentTarget)) return;
     try {
       setSavingEdit(true);
       setEditError("");
-      await updatePost(postId, { title: editTitle.trim(), body: editBody.trim() }, token);
-      toast.success("Post actualizado correctamente", TOAST_SUCCESS);
+      await updatePost(postId, { body: editBody.trim() }, token);
+      showSuccessToast("Publicación guardada correctamente.");
       setEditing(false);
       await refresh();
     } catch (err) {
-      setEditError(err.message);
+      setEditError(submissionError(err, "No pudimos guardar la publicación. Volvé a intentar."));
     } finally {
       setSavingEdit(false);
     }
@@ -121,7 +90,7 @@ export const usePost = (postId, token) => {
       setDeleting(true);
       setDeleteError("");
       await deletePost(postId, token);
-      toast.success("El post ha sido eliminado correctamente", TOAST_SUCCESS);
+      showSuccessToast("Publicación eliminada correctamente.");
       setDeleteModalOpen(false);
       return true;
     } catch (err) {
@@ -134,20 +103,16 @@ export const usePost = (postId, token) => {
 
   return {
     post,
-    likedByMe,
     loading,
     error,
-    likeLoading,
-    toggleLike,
     refresh,
     editing,
-    editTitle,
     editBody,
     editError,
     savingEdit,
-    setEditTitle,
     setEditBody,
     setEditError,
+    editValidation,
     startEdit,
     cancelEdit,
     saveEdit,

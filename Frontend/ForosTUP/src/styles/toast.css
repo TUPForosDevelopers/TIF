@@ -1,8 +1,43 @@
-.toast-success-custom {
-  background-color: #084f27 !important;
-  color: white !important;
+.Toastify__toast-container--top-center { top: 4.65rem; }
+
+.Toastify__toast.salvia-toast {
+  --toastify-color-light: #e2e6da;
+  --toastify-text-color-light: #365345;
+  --toastify-color-progress-light: #87977d;
+  --toastify-color-progress-success: #87977d;
+  --toastify-color-progress-info: #87977d;
+  --toastify-color-progress-warning: #87977d;
+  --toastify-color-progress-error: #87977d;
+  --toastify-toast-width: min(23rem, calc(100vw - 2rem));
+  --toastify-toast-min-height: 52px;
+  --toastify-toast-shadow: 0 .2rem .55rem #26332b26;
+  --toastify-toast-bd-radius: .55rem;
+  border: 1px solid #c5cbbd;
+  padding-inline-end: 2.25rem;
+  font-weight: 600;
 }
 
-.toast-progress-custom {
-  background-color: #7fd69b !important;
+.salvia-toast .Toastify__close-button {
+  top: 50%;
+  right: .75rem;
+  transform: translateY(-50%);
+  color: var(--toastify-text-color-light);
+  opacity: .75;
+}
+
+.salvia-toast .Toastify__close-button:hover { opacity: 1; }
+.salvia-toast .Toastify__progress-bar--wrp { height: 3px; }
+.success-toast-mark,
+.validation-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: baseline;
+  width: 1.05em;
+  height: 1.05em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  margin-inline-start: .25em;
+  font-weight: 650;
+  line-height: 1;
 }

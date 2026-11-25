@@ -9,24 +9,25 @@ import {
   Modal,
   ModalFooter,
   ButtonGroup,
-  DropdownMenu,
   DropdownHeader,
 } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./NavBar.css";
 import { useState } from "react";
+import { deleteUser } from "../Services/userService.js";
 
-const NavBar = () => {
+const NavBar = ({ salvia = false }) => {
   const navigate = useNavigate();
-
-  const API_URL = "http://localhost:5073";
+  const { pathname } = useLocation();
+  const authPage = salvia && ["/login", "/register"].includes(pathname.replace(/\/$/, ""));
+  const inForum = salvia && /^\/(forum|post)\//.test(pathname);
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
   const [deleteAccountError, setDeleteAccountError] = useState("");
 
-  const { user, isAuthenticated, logout, isAdmin, isSysAdmin, token } = useAuth();
+  const { user, token, isAuthenticated, logout, isAdmin, isSysAdmin } = useAuth();
 
   const userColor = isSysAdmin ? "warning" : (isAdmin ? "light" : "info");
 
@@ -47,27 +48,12 @@ const NavBar = () => {
     setDeleteAccountLoading(true);
     setDeleteAccountError("");
 
-    const idUserToRemove = user.id;
 
     try {
-      console.log(idUserToRemove);
-
-      const response = await fetch(`${API_URL}/persons/${idUserToRemove}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "No se pudo eliminar el usuario");
-      } else {
-        closeDeleteModal();
-        logout();
-        navigate("/register");
-      }
+      await deleteUser(token);
+      closeDeleteModal();
+      logout();
+      navigate("/register");
     } catch (err) {
       setDeleteAccountError(err);
     } finally {
@@ -79,7 +65,7 @@ const NavBar = () => {
     <Navbar expand="lg" className="app-navbar">
       <Container fluid className="app-navbar-container">
         <Navbar.Brand as={Link} to="/main" className="app-navbar-brand">
-          GRAN FORO TUP
+          {salvia ? <><span className="salvia-mark" aria-hidden="true" />ForosTUP</> : "GRAN FORO TUP"}
         </Navbar.Brand>
 
         <Navbar.Toggle
@@ -89,7 +75,7 @@ const NavBar = () => {
 
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="app-navbar-links">
-            <Nav.Link as={Link} to="/foros" className="app-navbar-link">
+            <Nav.Link as={salvia ? NavLink : Link} to="/foros" className={inForum ? "app-navbar-link active" : "app-navbar-link"}>
               Foros
             </Nav.Link>
 
@@ -104,15 +90,20 @@ const NavBar = () => {
             {isAuthenticated ? (
               <>
               <ButtonGroup size="sm ms-auto">
-                <Button disabled variant={userColor}>{user.role}</Button>
+                {!salvia && <Button disabled variant={userColor}>{user.role}</Button>}
                 <DropdownButton
                   as={ButtonGroup}
-                  popperConfig={{ strategy: 'fixed' }}
+                  popperConfig={salvia ? undefined : { strategy: 'fixed' }}
                   align="end"
                   drop="down"
                   variant="success"
                   className="app-navbar-username app-navbar-dropdown bg-nested-dropdown"
-                  title={user?.name || "Usuario"}
+                  title={salvia ? <>
+                    <span className="salvia-avatar" aria-hidden="true">
+                      {user?.name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"}
+                    </span>
+                    {user?.name || "Usuario"}
+                  </> : user?.name || "Usuario"}
                 >
                     <DropdownHeader>Opciones de usuario</DropdownHeader>
                   <Dropdown.Item as={Link} to="/user/edit">
@@ -182,7 +173,7 @@ const NavBar = () => {
                   </ModalFooter>
                 </Modal>
               </>
-            ) : (
+            ) : !authPage && (
               <>
                 <Nav.Link as={Link} to="/login" className="app-navbar-link">
                   Iniciar sesión

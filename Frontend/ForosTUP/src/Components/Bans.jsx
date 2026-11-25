@@ -1,9 +1,10 @@
-
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
+import { getBans, revokeBan } from "../Services/banService.js";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Table, Modal, Badge } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext.jsx";
 import { toast } from "react-toastify";
-import EditBan from "./BanModification.jsx";
+import EditBan from "./BanModification.jsx"
 import "./Bans.css";
 
 const Bans = () => {
@@ -13,27 +14,17 @@ const Bans = () => {
   const [selectedBan, setSelectedBan] = useState(null);
 
   const [bans, setBans] = useState([]);
+  const [loadedAt, setLoadedAt] = useState(Date.now);
   const [banLoadingId, setBanLoadingId] = useState(null);
   const [error, setError] = useState("");
 
-  // Carga los baneos desde el backend.
+
   const cargarBans = useCallback(async () => {
     try {
       setError("");
 
-      const response = await fetch("http://localhost:5073/bans", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "No se pudieron cargar los baneos");
-      }
-
-      setBans(data);
+      setBans(await getBans(token));
+      setLoadedAt(Date.now());
     } catch (error) {
       setError(error.message);
       setBans([]);
@@ -46,41 +37,14 @@ const Bans = () => {
     cargarBans();
   }, [cargarBans, token]);
 
-  // Desbanea al usuario.
   const desban = async (ban) => {
     try {
       setBanLoadingId(ban.id);
 
-      const response = await fetch(`http://localhost:5073/bans/${ban.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: "desbaneado",
-        }),
-      });
+      await revokeBan(ban.id, token);
+      await cargarBans();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al actualizar el ban");
-      }
-
-      // Actualiza el estado visual sin volver a cargar toda la lista.
-      setBans((prevBans) =>
-        prevBans.map((item) =>
-          item.id === ban.id
-            ? { ...item, status: "desbaneado" }
-            : item
-        )
-      );
-
-      toast.success("Usuario desbaneado correctamente", {
-        className: "toast-success-custom",
-        progressClassName: "toast-progress-custom",
-      });
+      showSuccessToast("Usuario desbaneado correctamente");
 
     } catch (error) {
       toast.error(error.message || "No se pudo desbanear el usuario");
@@ -99,34 +63,31 @@ const Bans = () => {
     setSelectedBan(null);
   };
 
-  // Formatea las fechas recibidas del backend.
-  const formatDate = (date) => {
-    if (!date) return "No disponible";
-
-    return new Date(date).toLocaleDateString("es-AR");
+  const dayleft = (ban) => {
+    const days = Math.ceil((new Date(ban.endDate) - loadedAt) / 86400000);
+    if (ban.status !== "activo" || days <= 0) return "Finalizado";
+    return days === 1 ? "(1 día restante)" : `(${days} días restantes)`;
   };
 
   return (
+
     <main className="bans-page">
       <div className="container mt-4">
         <h1 className="mb-4" style={{ color: "green" }}>
           Lista de baneos
         </h1>
-
         {error && (
           <Alert variant="danger">
             {error}
           </Alert>
         )}
-
         <Table striped bordered hover>
           <thead className="table-success">
             <tr>
-              <th>Usuario (ID)</th>
-              <th>Admin (ID)</th>
+              <th>Usuario baneado</th>
+              <th>Admin</th>
               <th>Motivo</th>
               <th>Fecha de baneo</th>
-              <th>Fecha de finalización</th>
               <th>Duración</th>
               <th>Estado</th>
               <th>Acción</th>
@@ -134,22 +95,22 @@ const Bans = () => {
           </thead>
 
           <tbody>
+            {!error && !bans.length && (
+              <tr><td colSpan={7}>No hay baneos registrados.</td></tr>
+            )}
             {bans.map((item) => (
               <tr key={item.id}>
-                <td>{item.userId}</td>
+                <td>{item.bannedUser?.name || "Usuario no encontrado"}</td>
 
-                <td>{item.adminId}</td>
+                <td>{item.adminUser?.name || "Admin no encontrado"}</td>
 
                 <td>{item.reason}</td>
 
-                <td>{formatDate(item.startDate)}</td>
-
-                <td>{formatDate(item.endDate)}</td>
+                <td>{new Date(item.startDate).toLocaleDateString("es-AR")}</td>
 
                 <td>
-                  {item.duration === 1
-                    ? "1 día"
-                    : `${item.duration} días`}
+                  {item.duration === 1 ? "1 día" : `${item.duration} días`}
+                  <br /> {dayleft(item)}
                 </td>
 
                 <td>
@@ -157,7 +118,7 @@ const Bans = () => {
                     bg={
                       item.status === "activo"
                         ? "success"
-                        : item.status === "desbaneado"
+                        : item.status === "revocado"
                           ? "secondary"
                           : "danger"
                     }
@@ -168,28 +129,26 @@ const Bans = () => {
 
                 <td>
                   <Button
+
                     size="sm"
                     onClick={() => openEditModal(item)}
+                    disabled={item.status !== "activo"}
                     className="me-2 btn btn-success"
                   >
                     Modificar
                   </Button>
-
                   {item.status === "activo" ? (
                     <Button
+
                       size="sm"
                       onClick={() => desban(item)}
                       disabled={banLoadingId === item.id}
                       className="me-2 btn btn-outline-danger btn btn-light"
                     >
-                      {banLoadingId === item.id
-                        ? "Desbaneando..."
-                        : "Desbanear"}
+                      {banLoadingId === item.id ? "Desbaneando..." : "Desbanear"}
                     </Button>
                   ) : (
-                    <span className="text-muted me-2">
-                      Ban inactivo
-                    </span>
+                    <span className="text-muted me-2">Ban inactivo</span>
                   )}
                 </td>
               </tr>
@@ -197,7 +156,6 @@ const Bans = () => {
           </tbody>
         </Table>
       </div>
-
       <Modal
         show={showEditModal}
         onHide={closeEditModal}
