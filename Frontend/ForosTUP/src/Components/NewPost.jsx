@@ -1,205 +1,69 @@
 import { useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
-import { Container, Card, Form, Button, Alert } from "react-bootstrap";
-import { toast } from "react-toastify";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import "./NewPost.css";
+import { createPost } from "../Services/postService.js";
+import { BODY_MAX, submissionError, validateBody } from "../Services/UtilityServices/formValidation.js";
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
+import { useFieldValidation } from "../hooks/useFieldValidation.js";
+import ValidationMessage from "./ValidationMessage.jsx";
 
-const NewPost = () => {
+export default function NewPost() {
   const { forumId } = useParams();
   const navigate = useNavigate();
   const { token } = useAuth();
-
-  const [form, setForm] = useState({
-    title: "",
-    body: "",
-  });
-
-  const [errors, setErrors] = useState({
-    title: "",
-    body: "",
-  });
-
-  const [errorGeneral, setErrorGeneral] = useState("");
+  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const validateForm = () => {
-    const newErrors = {
-      title: "",
-      body: "",
-    };
-
-    if (!form.title.trim()) {
-      newErrors.title = "El título es obligatorio";
-    } else if (form.title.trim().length < 5) {
-      newErrors.title = "El título debe tener al menos 5 caracteres";
-    }
-
-    if (!form.body.trim()) {
-      newErrors.body = "El contenido de la publicación es obligatorio";
-    } else if (form.body.trim().length < 10) {
-      newErrors.body = "La publicación debe tener al menos 10 caracteres";
-    }
-
-    setErrors(newErrors);
-
-    return !newErrors.title && !newErrors.body;
-  };
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setForm({
-      ...form,
-      [name]: value,
-    });
-
-    setErrors({
-      ...errors,
-      [name]: "",
-    });
-
-    setErrorGeneral("");
-  };
+  const validation = useFieldValidation({
+    body: validateBody(body, "Escribí el contenido de la publicación.", 10),
+  }, "new-post");
+  const count = body.trim().length;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    setErrorGeneral("");
-
-    const isValid = validateForm();
-
-    if (!isValid) {
+    setError("");
+    if (!validation.submit(event.currentTarget)) return;
+    if (!token) {
+      setError("Iniciá sesión para publicar.");
       return;
     }
-
     setLoading(true);
-
     try {
-      const response = await fetch(
-        `http://localhost:5073/Forum/${forumId}/Post`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(form),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || data.error || "No se pudo crear la publicación"
-        );
-      }
-      toast.success("Publicación creada correctamente.", {
-        className: "toast-success-custom",
-        progressClassName: "toast-progress-custom",
-    });
-
-      navigate(`/post/${data.id}`);
+      const post = await createPost({ body, forumId }, token);
+      showSuccessToast("Publicación creada correctamente.");
+      navigate(`/post/${post.id}`);
     } catch (error) {
-      setErrorGeneral(error.message);
+      setError(submissionError(error, "No pudimos publicar. Volvé a intentar."));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="new-post-page">
-      <Container>
-        <Card className="new-post-card">
-          <Card.Body>
-            <div className="new-post-header">
-              <div className="new-post-breadcrumb">
-                <Link to="/foros">Foros</Link>
-                <span>{">"}</span>
-                <Link to={`/forum/${forumId}`}>Foro</Link>
-                <span>{">"}</span>
-                <span>Nueva publicación</span>
-              </div>
-
-              <span className="new-post-badge">Publicación</span>
-
-              <h1>Crear nueva publicación</h1>
-
-              <p>
-                Escribí un título claro y desarrollá el contenido para iniciar
-                una conversación dentro del foro.
-              </p>
-            </div>
-
-            {errorGeneral && (
-              <Alert variant="danger" className="new-post-alert">
-                {errorGeneral}
-              </Alert>
-            )}
-
-            <Form onSubmit={handleSubmit} noValidate>
-              <Form.Group className="mb-3" controlId="title">
-                <Form.Label className="new-post-label">Título</Form.Label>
-
-                <Form.Control
-                  className="new-post-input"
-                  type="text"
-                  name="title"
-                  placeholder="Ej: Duda sobre React Router"
-                  value={form.title}
-                  onChange={handleChange}
-                  isInvalid={!!errors.title}
-                />
-
-                <Form.Control.Feedback type="invalid" className="new-post-error">
-                  {errors.title}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-4" controlId="body">
-                <Form.Label className="new-post-label">Contenido</Form.Label>
-
-                <Form.Control
-                  className="new-post-textarea"
-                  as="textarea"
-                  rows={7}
-                  name="body"
-                  placeholder="Escribí el contenido de tu publicación..."
-                  value={form.body}
-                  onChange={handleChange}
-                  isInvalid={!!errors.body}
-                />
-
-                <Form.Control.Feedback type="invalid" className="new-post-error">
-                  {errors.body}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <div className="new-post-actions">
-                <Button
-                  variant="outline-secondary"
-                  type="button"
-                  onClick={() => navigate(`/forum/${forumId}`)}
-                >
-                  Cancelar
-                </Button>
-
-                <Button
-                  variant="success"
-                  type="submit"
-                  disabled={loading}
-                  className="new-post-submit"
-                >
-                  {loading ? "Publicando..." : "Crear publicación"}
-                </Button>
-              </div>
-            </Form>
-          </Card.Body>
-        </Card>
-      </Container>
+    <main className="salvia-container salvia-compose">
+      <nav className="salvia-breadcrumb" aria-label="Ubicación">
+        <Link to="/foros">Foros</Link><span aria-hidden="true">/</span>
+        <Link to={`/forum/${forumId}`}>Foro</Link><span aria-hidden="true">/</span>
+        <span aria-current="page">Nueva publicación</span>
+      </nav>
+      <section className="salvia-panel">
+        <h1 className="salvia-title">Nueva publicación</h1>
+        <ValidationMessage notice>{error}</ValidationMessage>
+        <form className="salvia-form" onSubmit={handleSubmit} noValidate>
+          <label htmlFor="new-post-body">Contenido <span aria-hidden="true">*</span></label>
+          <textarea {...validation.field("body")} className="form-control" rows={7} name="body"
+            placeholder="Escribí el contenido de tu publicación…" value={body} required
+            onChange={(event) => { setBody(event.target.value); setError(""); }} />
+          <div className="validation-details">
+            <ValidationMessage id="new-post-body-error">{validation.show("body")}</ValidationMessage>
+            <span className="validation-counter" data-over={Boolean(validation.show("body")) && count > BODY_MAX}>{count} {count === 1 ? "carácter" : "caracteres"}</span>
+          </div>
+          <div className="salvia-editor-actions">
+            <Link className="btn salvia-secondary" to={`/forum/${forumId}`}>Cancelar</Link>
+            <button className="btn salvia-primary" disabled={loading}>{loading ? "Publicando…" : "Publicar"}</button>
+          </div>
+        </form>
+      </section>
     </main>
   );
-};
-
-export default NewPost;
+}

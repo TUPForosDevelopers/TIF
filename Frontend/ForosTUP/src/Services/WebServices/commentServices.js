@@ -1,46 +1,35 @@
-import { API_URL, readJsonResponse } from "./postServices";
+import { getUsersById } from "../userService.js";
+import { httpRequest } from "../httpClient.js";
 
 export const fetchComments = async (postId) => {
-  const response = await fetch(`${API_URL}/posts/${postId}/comments`);
-  const data = await readJsonResponse(response);
-  if (!response.ok) throw new Error(data.message || "No se pudieron cargar los comentarios");
-  return data;
+  const comments = await httpRequest(`/Comment?postId=${encodeURIComponent(postId)}`);
+  const authors = await getUsersById(comments.map(({ poster }) => poster));
+
+  return comments.map((comment) => ({
+    id: comment.id,
+    userId: comment.poster,
+    postDate: comment.date,
+    parentCommentId: comment.repliedComment,
+    text: comment.body,
+    isDeleted: comment.isDeleted,
+    hidden: comment.invisible,
+    suppressed: comment.suppressedByAdmin,
+    Person: authors.get(comment.poster),
+  }));
 };
 
-export const createComment = async (postId, { text, parentCommentId }, token) => {
-  const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+export const createComment = (postId, { text, parentCommentId }, token) =>
+  httpRequest("/Comment", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ text, parentCommentId }),
+    body: { parentPost: postId, body: text, repliedComment: parentCommentId ?? null },
+    token,
   });
-  const data = await readJsonResponse(response);
-  if (!response.ok) throw new Error(data.message || "No se pudo crear el comentario");
-  return data;
-};
 
-export const updateComment = async (commentId, text, token) => {
-  const response = await fetch(`${API_URL}/comments/${commentId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ text }),
-  });
-  const data = await readJsonResponse(response);
-  if (!response.ok) throw new Error(data.message || data.error || "No se pudo editar el comentario");
-  return data;
-};
+export const updateComment = (id, text, token) =>
+  httpRequest(`/Comment/${id}`, { method: "PATCH", body: text, token });
 
-export const deleteComment = async (commentId, token) => {
-  const response = await fetch(`${API_URL}/comments/${commentId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const data = await readJsonResponse(response);
-  if (!response.ok) throw new Error(data.message || "No se pudo borrar el comentario");
-  return data;
-};
+export const deleteComment = (id, token) =>
+  httpRequest(`/Comment/${id}`, { method: "DELETE", token });
+
+export const setCommentSuppressed = (id, suppressed, token) =>
+  httpRequest(`/Comment/${id}/suppress`, { method: "PATCH", body: suppressed, token });

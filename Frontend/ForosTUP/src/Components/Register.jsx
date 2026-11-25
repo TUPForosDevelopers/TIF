@@ -1,246 +1,92 @@
-import "./LogIn.css";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Form,
-  Button,
-  Alert,
-} from "react-bootstrap";
+import ValidationMessage from "./ValidationMessage.jsx";
+import { useFieldValidation } from "../hooks/useFieldValidation.js";
+import { submissionError, validateBirthDate, validateEmail } from "../Services/UtilityServices/formValidation.js";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { authenticate, createUser, getCurrentUser } from "../Services/userService.js";
+import { showSuccessToast } from "../Services/UtilityServices/successToast.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
-const Register = () => {
+const fields = [
+  { name: "name", label: "Nombre", type: "text", autoComplete: "name" },
+  { name: "email", label: "Correo electrónico", type: "email", autoComplete: "email" },
+  { name: "dateOfBirth", label: "Fecha de nacimiento", type: "date", autoComplete: "bday" },
+  { name: "password", label: "Contraseña", type: "password", autoComplete: "new-password" },
+  { name: "confirmPassword", label: "Confirmar contraseña", type: "password", autoComplete: "new-password" },
+];
+
+export default function Register() {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    nick: "",
-    name: "",
-    email: "",
-    birthdate: "",
-    password: "",
-    confirmPassword: "",
-  });
-
+  const { state } = useLocation();
+  const { login } = useAuth();
+  const [form, setForm] = useState({ name: "", email: "", dateOfBirth: "", password: "", confirmPassword: "" });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const validation = useFieldValidation({
+    name: form.name.trim() ? "" : "Ingresá tu nombre.",
+    email: validateEmail(form.email),
+    dateOfBirth: validateBirthDate(form.dateOfBirth),
+    password: form.password.trim() ? "" : "Ingresá tu contraseña.",
+    confirmPassword: !form.confirmPassword ? "Confirmá tu contraseña." :
+      form.password !== form.confirmPassword ? "Las contraseñas no coinciden." : "",
+  }, "register");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (loading) return;
     setError("");
-    setSuccess("");
-
-    if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      return;
-    }
-
-    if (!form.birthdate) {
-      setError("Ingresá tu fecha de nacimiento");
-      return;
-    }
-
-    const hoy = new Date();
-    const birthdate = new Date(
-      `${form.birthdate}T00:00:00`
-    );
-
-    if (birthdate > hoy) {
-      setError("La fecha de nacimiento no puede ser futura");
-      return;
-    }
+    if (!validation.submit(event.currentTarget)) return;
 
     setLoading(true);
-
+    let accountCreated = false;
     try {
-      const response = await fetch("http://localhost:5073/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          nick: form.nick,
-          name: form.name,
-          email: form.email,
-          birthdate: form.birthdate,
-          password: form.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Error al registrar usuario");
-      }
-
-      setSuccess("Usuario registrado correctamente");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      await createUser(form);
+      accountCreated = true;
+      const token = await authenticate(form.email, form.password);
+      login(await getCurrentUser(token), token);
+      showSuccessToast("Cuenta creada correctamente.");
+      navigate("/main", { replace: true });
     } catch (error) {
-      setError(error.message);
+      if (accountCreated) {
+        navigate("/login", { replace: true, state: { email: form.email.trim(), registered: true } });
+      } else if (error.status === 400 && error.message === "Email is already registered.") {
+        validation.report("email", "Este correo ya está registrado.");
+        document.getElementById("register-email")?.focus();
+      } else {
+        setError(submissionError(error, "No pudimos crear la cuenta. Revisá los datos e intentá de nuevo."));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="login-page login-page-light">
-      <Container>
-        <Row className="justify-content-center">
-          <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-            <Card className="login-card">
-              <Card.Body className="login-card-body">
-                <div className="login-header">
-                  <div className="login-badge">Foro TUP</div>
-
-                  <h2 className="login-title">Crear cuenta</h2>
-
-                  <p className="login-subtitle">
-                    Unite al Gran Foro TUP y empezá a participar
-                  </p>
-                </div>
-
-                {error && (
-                  <Alert variant="danger" className="login-alert">
-                    {error}
-                  </Alert>
-                )}
-
-                {success && (
-                  <Alert variant="success" className="login-alert">
-                    {success}
-                  </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Nick
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="text"
-                      name="nick"
-                      value={form.nick}
-                      onChange={handleChange}
-                      placeholder="Ej: Juan123"
-                      autoComplete="username"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Nombre
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="text"
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      placeholder="Ingresá tu nombre"
-                      autoComplete="name"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Correo electrónico
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="email"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="ejemplo@mail.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Fecha de nacimiento
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="date"
-                      name="birthdate"
-                      value={form.birthdate}
-                      onChange={handleChange}
-                      max={new Date().toLocaleDateString("en-CA")}
-                      autoComplete="bday"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label className="login-label">
-                      Contraseña
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="password"
-                      name="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      placeholder="Creá una contraseña"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-4">
-                    <Form.Label className="login-label">
-                      Confirmar contraseña
-                    </Form.Label>
-                    <Form.Control
-                      className="login-input"
-                      type="password"
-                      name="confirmPassword"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Repetí tu contraseña"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </Form.Group>
-
-                  <Button
-                    type="submit"
-                    className="login-button"
-                    disabled={loading}
-                  >
-                    {loading ? "Registrando..." : "Crear cuenta"}
-                  </Button>
-                </Form>
-
-                <div className="login-footer">
-                  <span>¿Ya tenés cuenta?</span>{" "}
-                  <Link to="/login">Iniciar sesión</Link>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-      </Container>
+    <main className="salvia-auth">
+      <section className="salvia-panel salvia-auth-card salvia-register-card" aria-labelledby="register-title">
+        <h1 id="register-title">Crear cuenta</h1>
+        <ValidationMessage notice>{error}</ValidationMessage>
+        <form className="salvia-form" onSubmit={handleSubmit} noValidate>
+          <div className="salvia-register-fields">
+            {fields.map(({ name, label, type, autoComplete }) => (
+              <div key={name} className={name === "dateOfBirth" ? "salvia-full-field" : undefined}>
+                <label htmlFor={`register-${name}`}>{label} <span aria-hidden="true">*</span></label>
+                <input {...validation.field(name)} name={name} className="form-control" type={type}
+                  autoComplete={autoComplete} value={form[name]} required
+                  onChange={(event) => {
+                    setForm({ ...form, [name]: event.target.value });
+                    setError("");
+                  }} />
+                <ValidationMessage id={`register-${name}-error`}>{validation.show(name)}</ValidationMessage>
+              </div>
+            ))}
+          </div>
+          <button className="btn salvia-primary salvia-auth-submit" disabled={loading}>
+            {loading ? "Registrando…" : "Registrarme"}
+          </button>
+        </form>
+        <p className="salvia-auth-footer">¿Ya tenés cuenta? <Link to="/login" state={{ from: state?.from }}>Iniciar sesión</Link></p>
+      </section>
     </main>
   );
-};
-
-export default Register;
+}

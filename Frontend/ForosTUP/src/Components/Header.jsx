@@ -1,6 +1,8 @@
 import NavBar from "./NavBar.jsx";
 
-const Header = () => {
+const Header = ({ salvia }) => {
+  if (salvia) return <header className="salvia-header"><NavBar salvia /></header>;
+
   const SpacerStyle = {
     paddingBottom: "72px",
   };

@@ -1,15 +1,14 @@
-import { Alert, Button, Form, Modal } from "react-bootstrap";
+import ValidationMessage from "./ValidationMessage.jsx";
+import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import Comment from "./Comment";
-import { buildCommentTree, getInitial, getNestedCommentCount } from "../Services/UtilityServices/postUtils";
+import { buildCommentTree, getInitial } from "../Services/UtilityServices/postUtils";
 
 const CommentSection = ({
-  postId,
   commentsState,
   permissions,
-  token,
   user,
-  isAdmin,
-  isSysAdmin,
+  token,
+  readOnly,
   requireAuth,
   navigate,
   onMakeAdminClick,
@@ -20,6 +19,7 @@ const CommentSection = ({
     setNewCommentText,
     creating,
     createError,
+    createValidation,
     submitComment,
     commentToDelete,
     deletingComment,
@@ -32,47 +32,50 @@ const CommentSection = ({
   const commentTree = buildCommentTree(comments);
 
   const commentProps = {
-    postId,
     commentsState,
     permissions,
     token,
-    user,
-    isAdmin,
-    isSysAdmin,
+    readOnly,
     requireAuth,
     navigate,
     onMakeAdminClick,
     onDeleteClick: (comment) => requireAuth(() => openDeleteModal(comment)),
   };
 
-  const nestedCount = commentToDelete ? getNestedCommentCount(commentToDelete) : 0;
-
   return (
     <>
-      <section className="post-comment-entry">
-        <Form onSubmit={(e) => requireAuth(() => submitComment(e))} noValidate>
+      <h2 className="post-comments-heading">Comentarios</h2>
+      {!readOnly && <section className="salvia-panel post-comment-entry">
+        <Form onSubmit={(event) => {
+          event.preventDefault();
+          requireAuth(() => submitComment(event));
+        }} noValidate>
+          <ValidationMessage notice>{createError}</ValidationMessage>
           <div className="post-comment-input-row">
-            <div className="post-comment-user-avatar">{getInitial(user?.name || "U")}</div>
-            <Form.Control
-              type="text"
-              className="post-comment-input"
-              placeholder="Unite a la conversación"
+            <div className="post-comment-user-avatar" aria-hidden="true">{getInitial(user?.name || "U")}</div>
+            <textarea
+              {...createValidation.field("body")}
+              rows={2}
+              className="form-control post-comment-input"
+              placeholder="Escribí un comentario…"
+              aria-label="Escribí un comentario"
               value={newCommentText}
               onChange={(e) => setNewCommentText(e.target.value)}
-              isInvalid={!!createError}
             />
+            <Button type="submit" className="salvia-primary post-comment-submit" disabled={creating}>
+              {creating ? "Comentando…" : "Comentar"}
+            </Button>
           </div>
-          <Form.Control.Feedback type="invalid" className="post-comment-error d-block">
-            {createError}
-          </Form.Control.Feedback>
-          <Button type="submit" className="post-comment-submit" disabled={creating}>
-            {creating ? "Comentando..." : "Comentar"}
-          </Button>
+          <ValidationMessage id="comment-new-body-error">{createValidation.show("body")}</ValidationMessage>
         </Form>
-      </section>
+      </section>}
 
       <section className="post-comments-thread">
-        {commentTree.length === 0 ? (
+        {commentsState.loading ? (
+          <Spinner animation="border" aria-label="Cargando comentarios" />
+        ) : commentsState.error ? (
+          <Alert variant="danger">{commentsState.error}</Alert>
+        ) : commentTree.length === 0 ? (
           <div className="post-comments-empty">
             <h3>No hay comentarios todavía</h3>
             <p>Sé el primero en unirte a la conversación.</p>
@@ -84,18 +87,13 @@ const CommentSection = ({
         )}
       </section>
 
-      <Modal show={!!commentToDelete} onHide={closeDeleteModal} centered>
+      <Modal dialogClassName="salvia-dialog" show={!!commentToDelete} onHide={closeDeleteModal} centered>
         <Modal.Header closeButton={!deletingComment}>
           <Modal.Title>Borrar comentario</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p className="mb-2">¿Estás seguro que deseás borrar este comentario?</p>
-          {nestedCount > 0 && (
-            <p className="delete-comment-warning mb-0">
-              También se borrarán {nestedCount}
-              {nestedCount === 1 ? " respuesta anidada." : " respuestas anidadas."}
-            </p>
-          )}
+          <p>Las respuestas existentes se conservan.</p>
           {deleteError && (
             <Alert variant="danger" className="mt-3 mb-0">{deleteError}</Alert>
           )}

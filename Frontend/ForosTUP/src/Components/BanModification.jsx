@@ -1,3 +1,4 @@
+import { updateBan } from "../Services/banService.js";
 import { useState } from "react";
 import "./Bans.css";
 import { Alert, Button, Card, Col, Form, FormGroup, Row } from "react-bootstrap";
@@ -31,7 +32,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
             return;
         }
 
-        if (!formData.duration || Number(formData.duration) <= 0) {
+        if (!Number.isInteger(Number(formData.duration)) || Number(formData.duration) <= 0) {
             setError("La duración debe ser mayor a 0 días.");
             return;
         }
@@ -40,22 +41,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
             setError("");
             setSuccess("");
 
-            const response = await fetch(`http://localhost:5073/bans/${ban.id}`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    duration: Number(formData.duration),
-                    reason: formData.reason.trim(),
-                }),
-            })
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Error al modificar el ban");
-            }
+            await updateBan(ban.id, formData, token);
 
             setSuccess("Ban modificado correctamente.");
             await onUpdated();
@@ -72,9 +58,7 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
         <div>
             <Card className="p-4 shadow bg-success text-light">
                 <Card.Body>
-                    <h2 className="text-center mb-4">
-                        Estas modificando el baneo del usuario {ban.userId}
-                    </h2>
+                    <h2 className="text-center mb-4">Estas modificando el baneo de {ban.bannedUser?.name}</h2>
                     <h2 className="text-center mb-4">Ban Nº:{ban.id}</h2>
                     {error && (
                         <Alert variant="danger">
@@ -102,15 +86,15 @@ const EditBan = ({ ban, onClose, onUpdated }) => {
                         <FormGroup className="mb-3">
                             <Form.Label>Duracion</Form.Label>
                             <br />
-                            {ban.status === "activo" ? (
-                                <Form.Control
-                                    type="number"
-                                    name="duration"
-                                    value={formData.duration}
-                                    onChange={handleChange}
-                                    required
-                                    min="1"
-                                />) : (<span className="text-muted me-2"> Ban inactivo</span>)}
+                            {ban.status === "activo"? (
+                            <Form.Control
+                                type="number"
+                                name="duration"
+                                value={formData.duration}
+                                onChange={handleChange}
+                                required
+                                min="1"
+                            />): (<span className="text-muted me-2"> Ban inactivo</span>)}
                         </FormGroup>
                         <Row>
                             <Col md={6}>
